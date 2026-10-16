@@ -32,3 +32,34 @@ All tools check the enabled setting on every call. Desktop and MCP use the same 
 For development and isolated tests, `SUBBIT_CONFIG_DIR` overrides both the configuration and initial data directories. Never point test runs at personal data.
 
 Data returned to a cloud Agent is processed by that Agent, even though Subbit itself stores everything locally.
+
+## Example import record
+
+All fields in `catalog/subscription.schema.json` are required; optional values use `null` or an empty string. For example:
+
+```json
+{
+  "id": "my-apple-music-account",
+  "name": "Apple Music",
+  "serviceId": "apple-music",
+  "category": "media",
+  "plan": "Individual",
+  "icon": null,
+  "amount": "11",
+  "currency": "CNY",
+  "kind": "recurring",
+  "cycleUnit": "month",
+  "cycleCount": 1,
+  "purchasedAt": "2026-10-16",
+  "expiresAt": null,
+  "autoRenew": true,
+  "active": true,
+  "reimbursement": "none",
+  "reimbursementValue": "0",
+  "paymentMethod": "apple",
+  "notes": "Illustrative price; replace with the user's actual bill.",
+  "fixedUsdRate": null
+}
+```
+
+Pass it as `{"records":[...]}` to `preview_import`, then `{"importId":"stable-batch-id","records":[...]}` to `import_subscriptions`.

@@ -1,0 +1,44 @@
+{
+  "id": "icloud",
+  "name": "iCloud+",
+  "category": "storage",
+  "aliases": [],
+  "icon": "/catalog/icons/icloud.svg",
+  "iconSource": "https://simpleicons.org/",
+  "iconLicense": "CC0-1.0",
+  "source": "https://www.apple.com/icloud/",
+  "reviewedAt": "2026-10-16",
+  "regions": ["Availability and plan names vary by region"],
+  "plans": [
+    {
+      "id": "1",
+      "name": "50GB",
+      "kind": "recurring",
+      "retired": false
+    },
+    {
+      "id": "2",
+      "name": "200GB",
+      "kind": "recurring",
+      "retired": false
+    },
+    {
+      "id": "3",
+      "name": "2TB",
+      "kind": "recurring",
+      "retired": false
+    },
+    {
+      "id": "4",
+      "name": "6TB",
+      "kind": "recurring",
+      "retired": false
+    },
+    {
+      "id": "5",
+      "name": "12TB",
+      "kind": "recurring",
+      "retired": false
+    }
+  ]
+}

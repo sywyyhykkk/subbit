@@ -1,0 +1,50 @@
+{
+  "id": "pcloud",
+  "name": "pCloud",
+  "category": "storage",
+  "aliases": [],
+  "icon": "/catalog/icons/pcloud.png",
+  "iconSource": "https://pcdn-www.pcloud.com/ZWqZ4/images/favicons/favicon-16x16.png",
+  "iconLicense": "Brand asset; respective owner retains rights",
+  "source": "https://www.pcloud.com/cloud-storage-pricing-plans.html",
+  "reviewedAt": "2026-10-16",
+  "regions": ["Availability and plan names vary by region"],
+  "plans": [
+    {
+      "id": "1",
+      "name": "Premium 500 GB",
+      "kind": "recurring",
+      "retired": false
+    },
+    {
+      "id": "2",
+      "name": "Premium Plus 2 TB",
+      "kind": "recurring",
+      "retired": false
+    },
+    {
+      "id": "3",
+      "name": "Ultra 10 TB",
+      "kind": "recurring",
+      "retired": false
+    },
+    {
+      "id": "4",
+      "name": "Lifetime 500 GB",
+      "kind": "lifetime",
+      "retired": false
+    },
+    {
+      "id": "5",
+      "name": "Lifetime 2 TB",
+      "kind": "lifetime",
+      "retired": false
+    },
+    {
+      "id": "6",
+      "name": "Lifetime 10 TB",
+      "kind": "lifetime",
+      "retired": false
+    }
+  ]
+}

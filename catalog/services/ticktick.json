@@ -1,0 +1,20 @@
+{
+  "id": "ticktick",
+  "name": "TickTick",
+  "category": "productivity",
+  "aliases": [],
+  "icon": "/catalog/icons/ticktick.svg",
+  "iconSource": "https://simpleicons.org/",
+  "iconLicense": "CC0-1.0",
+  "source": "https://ticktick.com/upgrade",
+  "reviewedAt": "2026-10-16",
+  "regions": ["Availability and plan names vary by region"],
+  "plans": [
+    {
+      "id": "1",
+      "name": "Premium",
+      "kind": "recurring",
+      "retired": false
+    }
+  ]
+}

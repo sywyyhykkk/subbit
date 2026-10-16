@@ -1,0 +1,32 @@
+{
+  "id": "google-ai",
+  "name": "Google AI",
+  "category": "ai",
+  "aliases": [],
+  "icon": "/catalog/icons/google-ai.svg",
+  "iconSource": "https://simpleicons.org/",
+  "iconLicense": "CC0-1.0",
+  "source": "https://one.google.com/about/google-ai-plans/",
+  "reviewedAt": "2026-10-16",
+  "regions": ["Availability and plan names vary by region"],
+  "plans": [
+    {
+      "id": "1",
+      "name": "Google AI Plus",
+      "kind": "recurring",
+      "retired": false
+    },
+    {
+      "id": "2",
+      "name": "Google AI Pro",
+      "kind": "recurring",
+      "retired": false
+    },
+    {
+      "id": "3",
+      "name": "Google AI Ultra",
+      "kind": "recurring",
+      "retired": false
+    }
+  ]
+}

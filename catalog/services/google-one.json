@@ -1,0 +1,26 @@
+{
+  "id": "google-one",
+  "name": "Google One",
+  "category": "storage",
+  "aliases": [],
+  "icon": "/catalog/icons/google-one.svg",
+  "iconSource": "https://simpleicons.org/",
+  "iconLicense": "CC0-1.0",
+  "source": "https://one.google.com/about/plans",
+  "reviewedAt": "2026-10-16",
+  "regions": ["Availability and plan names vary by region"],
+  "plans": [
+    {
+      "id": "1",
+      "name": "Basic",
+      "kind": "recurring",
+      "retired": false
+    },
+    {
+      "id": "2",
+      "name": "Premium",
+      "kind": "recurring",
+      "retired": false
+    }
+  ]
+}

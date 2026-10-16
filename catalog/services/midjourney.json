@@ -1,0 +1,38 @@
+{
+  "id": "midjourney",
+  "name": "Midjourney",
+  "category": "ai",
+  "aliases": [],
+  "icon": "/catalog/icons/midjourney.svg",
+  "iconSource": "Local letter placeholder",
+  "iconLicense": "MIT",
+  "source": "https://docs.midjourney.com/hc/en-us/articles/27870484040333-Comparing-Midjourney-Plans",
+  "reviewedAt": "2026-10-16",
+  "regions": ["Availability and plan names vary by region"],
+  "plans": [
+    {
+      "id": "1",
+      "name": "Basic",
+      "kind": "recurring",
+      "retired": false
+    },
+    {
+      "id": "2",
+      "name": "Standard",
+      "kind": "recurring",
+      "retired": false
+    },
+    {
+      "id": "3",
+      "name": "Pro",
+      "kind": "recurring",
+      "retired": false
+    },
+    {
+      "id": "4",
+      "name": "Mega",
+      "kind": "recurring",
+      "retired": false
+    }
+  ]
+}

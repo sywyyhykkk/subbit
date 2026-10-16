@@ -1,0 +1,98 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Stable unique record ID, e.g. a UUID"
+    },
+    "name": {
+      "type": "string"
+    },
+    "serviceId": {
+      "type": ["string", "null"]
+    },
+    "category": {
+      "type": "string"
+    },
+    "plan": {
+      "type": "string"
+    },
+    "icon": {
+      "type": ["string", "null"]
+    },
+    "amount": {
+      "type": "string",
+      "pattern": "^\\d+(\\.\\d{1,12})?$",
+      "description": "Original per-cycle price or one-time purchase price, never guess"
+    },
+    "currency": {
+      "type": "string"
+    },
+    "kind": {
+      "enum": ["recurring", "lifetime"]
+    },
+    "cycleUnit": {
+      "enum": ["day", "week", "month", "year"]
+    },
+    "cycleCount": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 120
+    },
+    "purchasedAt": {
+      "type": "string",
+      "format": "date"
+    },
+    "expiresAt": {
+      "type": ["string", "null"],
+      "format": "date",
+      "description": "Optional expiry/renewal anchor; required when recurring autoRenew=false"
+    },
+    "autoRenew": {
+      "type": "boolean"
+    },
+    "active": {
+      "type": "boolean"
+    },
+    "reimbursement": {
+      "enum": ["none", "full", "fixed", "percent"]
+    },
+    "reimbursementValue": {
+      "type": "string"
+    },
+    "paymentMethod": {
+      "type": "string"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "fixedUsdRate": {
+      "type": ["string", "null"],
+      "description": "USD per 1 original currency unit, overrides latest quote"
+    }
+  },
+  "required": [
+    "id",
+    "name",
+    "serviceId",
+    "category",
+    "plan",
+    "icon",
+    "amount",
+    "currency",
+    "kind",
+    "cycleUnit",
+    "cycleCount",
+    "purchasedAt",
+    "expiresAt",
+    "autoRenew",
+    "active",
+    "reimbursement",
+    "reimbursementValue",
+    "paymentMethod",
+    "notes",
+    "fixedUsdRate"
+  ],
+  "additionalProperties": false
+}

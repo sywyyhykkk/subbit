@@ -1,0 +1,32 @@
+{
+  "id": "microsoft-365",
+  "name": "Microsoft 365",
+  "category": "productivity",
+  "aliases": [],
+  "icon": "/catalog/icons/microsoft-365.png",
+  "iconSource": "https://www.microsoft.com/favicon.ico?v2",
+  "iconLicense": "Brand asset; respective owner retains rights",
+  "source": "https://www.microsoft.com/microsoft-365/buy/compare-all-microsoft-365-products",
+  "reviewedAt": "2026-10-16",
+  "regions": ["Availability and plan names vary by region"],
+  "plans": [
+    {
+      "id": "1",
+      "name": "Personal",
+      "kind": "recurring",
+      "retired": false
+    },
+    {
+      "id": "2",
+      "name": "Family",
+      "kind": "recurring",
+      "retired": false
+    },
+    {
+      "id": "3",
+      "name": "Premium",
+      "kind": "recurring",
+      "retired": false
+    }
+  ]
+}

@@ -1,0 +1,50 @@
+[
+  {
+    "id": "media",
+    "zh": "媒体娱乐",
+    "en": "Media",
+    "icon": "♫"
+  },
+  {
+    "id": "productivity",
+    "zh": "生产力",
+    "en": "Productivity",
+    "icon": "▦"
+  },
+  {
+    "id": "ai",
+    "zh": "AI",
+    "en": "AI",
+    "icon": "✳"
+  },
+  {
+    "id": "storage",
+    "zh": "云存储",
+    "en": "Cloud storage",
+    "icon": "☁"
+  },
+  {
+    "id": "developer",
+    "zh": "开发工具",
+    "en": "Developer",
+    "icon": "⌘"
+  },
+  {
+    "id": "design",
+    "zh": "设计创作",
+    "en": "Design",
+    "icon": "◈"
+  },
+  {
+    "id": "vpn",
+    "zh": "VPN",
+    "en": "VPN",
+    "icon": "⌁"
+  },
+  {
+    "id": "other",
+    "zh": "其他",
+    "en": "Other",
+    "icon": "···"
+  }
+]

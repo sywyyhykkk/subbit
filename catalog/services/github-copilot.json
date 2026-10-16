@@ -1,0 +1,44 @@
+{
+  "id": "github-copilot",
+  "name": "GitHub Copilot",
+  "category": "developer",
+  "aliases": [],
+  "icon": "/catalog/icons/github-copilot.svg",
+  "iconSource": "https://simpleicons.org/",
+  "iconLicense": "MIT",
+  "source": "https://github.com/features/copilot/plans",
+  "reviewedAt": "2026-10-16",
+  "regions": ["Availability and plan names vary by region"],
+  "plans": [
+    {
+      "id": "1",
+      "name": "Pro",
+      "kind": "recurring",
+      "retired": false
+    },
+    {
+      "id": "2",
+      "name": "Pro+",
+      "kind": "recurring",
+      "retired": false
+    },
+    {
+      "id": "3",
+      "name": "Max",
+      "kind": "recurring",
+      "retired": false
+    },
+    {
+      "id": "4",
+      "name": "Business",
+      "kind": "recurring",
+      "retired": false
+    },
+    {
+      "id": "5",
+      "name": "Enterprise",
+      "kind": "recurring",
+      "retired": false
+    }
+  ]
+}

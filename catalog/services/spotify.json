@@ -1,0 +1,38 @@
+{
+  "id": "spotify",
+  "name": "Spotify",
+  "category": "media",
+  "aliases": [],
+  "icon": "/catalog/icons/spotify.svg",
+  "iconSource": "https://simpleicons.org/",
+  "iconLicense": "CC0-1.0",
+  "source": "https://www.spotify.com/us/premium/",
+  "reviewedAt": "2026-10-16",
+  "regions": ["Availability and plan names vary by region"],
+  "plans": [
+    {
+      "id": "1",
+      "name": "Individual",
+      "kind": "recurring",
+      "retired": false
+    },
+    {
+      "id": "2",
+      "name": "Duo",
+      "kind": "recurring",
+      "retired": false
+    },
+    {
+      "id": "3",
+      "name": "Family",
+      "kind": "recurring",
+      "retired": false
+    },
+    {
+      "id": "4",
+      "name": "Student",
+      "kind": "recurring",
+      "retired": false
+    }
+  ]
+}

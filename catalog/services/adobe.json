@@ -1,0 +1,26 @@
+{
+  "id": "adobe",
+  "name": "Adobe Creative Cloud",
+  "category": "design",
+  "aliases": [],
+  "icon": "/catalog/icons/adobe.png",
+  "iconSource": "https://www.adobe.com/favicon.ico",
+  "iconLicense": "Brand asset; respective owner retains rights",
+  "source": "https://www.adobe.com/creativecloud/plans.html",
+  "reviewedAt": "2026-10-16",
+  "regions": ["Availability and plan names vary by region"],
+  "plans": [
+    {
+      "id": "1",
+      "name": "Creative Cloud Standard",
+      "kind": "recurring",
+      "retired": false
+    },
+    {
+      "id": "2",
+      "name": "Creative Cloud Pro",
+      "kind": "recurring",
+      "retired": false
+    }
+  ]
+}

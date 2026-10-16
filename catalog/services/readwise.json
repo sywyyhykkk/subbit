@@ -1,0 +1,26 @@
+{
+  "id": "readwise",
+  "name": "Readwise",
+  "category": "productivity",
+  "aliases": [],
+  "icon": "/catalog/icons/readwise.png",
+  "iconSource": "https://d34adp677peecb.cloudfront.net/static/images/favicons/apple-touch-icon.8284936de99b.png",
+  "iconLicense": "Brand asset; respective owner retains rights",
+  "source": "https://readwise.io/pricing",
+  "reviewedAt": "2026-10-16",
+  "regions": ["Availability and plan names vary by region"],
+  "plans": [
+    {
+      "id": "1",
+      "name": "Readwise Lite",
+      "kind": "recurring",
+      "retired": false
+    },
+    {
+      "id": "2",
+      "name": "Readwise",
+      "kind": "recurring",
+      "retired": false
+    }
+  ]
+}

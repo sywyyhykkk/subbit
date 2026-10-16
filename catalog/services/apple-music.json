@@ -1,0 +1,32 @@
+{
+  "id": "apple-music",
+  "name": "Apple Music",
+  "category": "media",
+  "aliases": [],
+  "icon": "/catalog/icons/apple-music.svg",
+  "iconSource": "https://simpleicons.org/",
+  "iconLicense": "CC0-1.0",
+  "source": "https://www.apple.com/apple-music/",
+  "reviewedAt": "2026-10-16",
+  "regions": ["Availability and plan names vary by region"],
+  "plans": [
+    {
+      "id": "1",
+      "name": "Individual",
+      "kind": "recurring",
+      "retired": false
+    },
+    {
+      "id": "2",
+      "name": "Family",
+      "kind": "recurring",
+      "retired": false
+    },
+    {
+      "id": "3",
+      "name": "Student",
+      "kind": "recurring",
+      "retired": false
+    }
+  ]
+}

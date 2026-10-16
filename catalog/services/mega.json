@@ -1,0 +1,32 @@
+{
+  "id": "mega",
+  "name": "MEGA",
+  "category": "storage",
+  "aliases": [],
+  "icon": "/catalog/icons/mega.svg",
+  "iconSource": "https://simpleicons.org/",
+  "iconLicense": "CC0-1.0",
+  "source": "https://mega.io/pricing",
+  "reviewedAt": "2026-10-16",
+  "regions": ["Availability and plan names vary by region"],
+  "plans": [
+    {
+      "id": "1",
+      "name": "Pro I",
+      "kind": "recurring",
+      "retired": false
+    },
+    {
+      "id": "2",
+      "name": "Pro II",
+      "kind": "recurring",
+      "retired": false
+    },
+    {
+      "id": "3",
+      "name": "Pro III",
+      "kind": "recurring",
+      "retired": false
+    }
+  ]
+}

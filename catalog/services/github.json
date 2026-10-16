@@ -1,0 +1,32 @@
+{
+  "id": "github",
+  "name": "GitHub",
+  "category": "developer",
+  "aliases": [],
+  "icon": "/catalog/icons/github.svg",
+  "iconSource": "https://simpleicons.org/",
+  "iconLicense": "CC0-1.0",
+  "source": "https://github.com/pricing",
+  "reviewedAt": "2026-10-16",
+  "regions": ["Availability and plan names vary by region"],
+  "plans": [
+    {
+      "id": "1",
+      "name": "Pro",
+      "kind": "recurring",
+      "retired": false
+    },
+    {
+      "id": "2",
+      "name": "Team",
+      "kind": "recurring",
+      "retired": false
+    },
+    {
+      "id": "3",
+      "name": "Enterprise",
+      "kind": "recurring",
+      "retired": false
+    }
+  ]
+}

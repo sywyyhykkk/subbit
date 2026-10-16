@@ -1,0 +1,44 @@
+{
+  "id": "cursor",
+  "name": "Cursor",
+  "category": "developer",
+  "aliases": [],
+  "icon": "/catalog/icons/cursor.svg",
+  "iconSource": "https://simpleicons.org/",
+  "iconLicense": "CC0-1.0",
+  "source": "https://cursor.com/pricing",
+  "reviewedAt": "2026-10-16",
+  "regions": ["Availability and plan names vary by region"],
+  "plans": [
+    {
+      "id": "1",
+      "name": "Pro",
+      "kind": "recurring",
+      "retired": false
+    },
+    {
+      "id": "2",
+      "name": "Pro+",
+      "kind": "recurring",
+      "retired": false
+    },
+    {
+      "id": "3",
+      "name": "Ultra",
+      "kind": "recurring",
+      "retired": false
+    },
+    {
+      "id": "4",
+      "name": "Teams",
+      "kind": "recurring",
+      "retired": false
+    },
+    {
+      "id": "5",
+      "name": "Enterprise",
+      "kind": "recurring",
+      "retired": false
+    }
+  ]
+}

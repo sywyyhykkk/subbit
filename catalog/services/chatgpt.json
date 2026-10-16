@@ -1,0 +1,44 @@
+{
+  "id": "chatgpt",
+  "name": "ChatGPT",
+  "category": "ai",
+  "aliases": ["OpenAI"],
+  "icon": "/catalog/icons/chatgpt.svg",
+  "iconSource": "https://github.com/simple-icons/simple-icons/blob/13.21.0/icons/openai.svg",
+  "iconLicense": "CC0-1.0",
+  "source": "https://chatgpt.com/pricing/",
+  "reviewedAt": "2026-10-16",
+  "regions": ["Availability and plan names vary by region"],
+  "plans": [
+    {
+      "id": "1",
+      "name": "Go",
+      "kind": "recurring",
+      "retired": false
+    },
+    {
+      "id": "2",
+      "name": "Plus",
+      "kind": "recurring",
+      "retired": false
+    },
+    {
+      "id": "3",
+      "name": "Pro",
+      "kind": "recurring",
+      "retired": false
+    },
+    {
+      "id": "4",
+      "name": "Business",
+      "kind": "recurring",
+      "retired": false
+    },
+    {
+      "id": "5",
+      "name": "Enterprise",
+      "kind": "recurring",
+      "retired": false
+    }
+  ]
+}

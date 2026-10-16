@@ -1,0 +1,26 @@
+{
+  "id": "qq-music",
+  "name": "QQ音乐",
+  "category": "media",
+  "aliases": [],
+  "icon": "/catalog/icons/qq-music.svg",
+  "iconSource": "https://simpleicons.org/",
+  "iconLicense": "CC0-1.0",
+  "source": "https://y.qq.com/",
+  "reviewedAt": "2026-10-16",
+  "regions": ["Availability and plan names vary by region"],
+  "plans": [
+    {
+      "id": "1",
+      "name": "豪华绿钻",
+      "kind": "recurring",
+      "retired": false
+    },
+    {
+      "id": "2",
+      "name": "超级会员",
+      "kind": "recurring",
+      "retired": false
+    }
+  ]
+}

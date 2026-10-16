@@ -1,0 +1,38 @@
+{
+  "id": "proton-drive",
+  "name": "Proton Drive",
+  "category": "storage",
+  "aliases": [],
+  "icon": "/catalog/icons/proton-drive.svg",
+  "iconSource": "https://simpleicons.org/",
+  "iconLicense": "CC0-1.0",
+  "source": "https://proton.me/drive/pricing",
+  "reviewedAt": "2026-10-16",
+  "regions": ["Availability and plan names vary by region"],
+  "plans": [
+    {
+      "id": "1",
+      "name": "Drive Plus",
+      "kind": "recurring",
+      "retired": false
+    },
+    {
+      "id": "2",
+      "name": "Proton Unlimited",
+      "kind": "recurring",
+      "retired": false
+    },
+    {
+      "id": "3",
+      "name": "Proton Duo",
+      "kind": "recurring",
+      "retired": false
+    },
+    {
+      "id": "4",
+      "name": "Proton Family",
+      "kind": "recurring",
+      "retired": false
+    }
+  ]
+}

@@ -1,0 +1,44 @@
+{
+  "id": "claude",
+  "name": "Claude",
+  "category": "ai",
+  "aliases": [],
+  "icon": "/catalog/icons/claude.svg",
+  "iconSource": "https://simpleicons.org/",
+  "iconLicense": "CC0-1.0",
+  "source": "https://claude.com/pricing",
+  "reviewedAt": "2026-10-16",
+  "regions": ["Availability and plan names vary by region"],
+  "plans": [
+    {
+      "id": "1",
+      "name": "Pro",
+      "kind": "recurring",
+      "retired": false
+    },
+    {
+      "id": "2",
+      "name": "Max 5x",
+      "kind": "recurring",
+      "retired": false
+    },
+    {
+      "id": "3",
+      "name": "Max 20x",
+      "kind": "recurring",
+      "retired": false
+    },
+    {
+      "id": "4",
+      "name": "Team",
+      "kind": "recurring",
+      "retired": false
+    },
+    {
+      "id": "5",
+      "name": "Enterprise",
+      "kind": "recurring",
+      "retired": false
+    }
+  ]
+}

@@ -1,0 +1,38 @@
+{
+  "id": "perplexity",
+  "name": "Perplexity",
+  "category": "ai",
+  "aliases": [],
+  "icon": "/catalog/icons/perplexity.svg",
+  "iconSource": "https://simpleicons.org/",
+  "iconLicense": "CC0-1.0",
+  "source": "https://www.perplexity.ai/pro",
+  "reviewedAt": "2026-10-16",
+  "regions": ["Availability and plan names vary by region"],
+  "plans": [
+    {
+      "id": "1",
+      "name": "Pro",
+      "kind": "recurring",
+      "retired": false
+    },
+    {
+      "id": "2",
+      "name": "Max",
+      "kind": "recurring",
+      "retired": false
+    },
+    {
+      "id": "3",
+      "name": "Enterprise Pro",
+      "kind": "recurring",
+      "retired": false
+    },
+    {
+      "id": "4",
+      "name": "Enterprise Max",
+      "kind": "recurring",
+      "retired": false
+    }
+  ]
+}

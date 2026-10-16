@@ -1,0 +1,1 @@
+{"identifier":"default","description":"Local Subbit windows","windows":["main","panel"],"permissions":["core:default","dialog:allow-open","dialog:allow-save","dialog:allow-confirm","autostart:default"]}

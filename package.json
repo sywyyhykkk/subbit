@@ -1,0 +1,32 @@
+{
+  "name": "subbit",
+  "version": "0.1.0",
+  "description": "A lightweight, local-first subscription companion for macOS and Windows",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "check": "svelte-check --tsconfig ./tsconfig.json",
+    "tauri": "tauri",
+    "test": "cargo test --manifest-path src-tauri/Cargo.toml",
+    "catalog:check": "node scripts/check-catalog.mjs"
+  },
+  "keywords": [],
+  "author": "sywyyhykkk",
+  "license": "MIT",
+  "type": "module",
+  "dependencies": {
+    "@tauri-apps/api": "^2.12.4",
+    "@tauri-apps/plugin-autostart": "^2.7.0",
+    "@tauri-apps/plugin-dialog": "^2.8.3",
+    "svelte": "^5.57.2"
+  },
+  "devDependencies": {
+    "@sveltejs/vite-plugin-svelte": "^7.3.1",
+    "@tauri-apps/cli": "^2.12.3",
+    "simple-icons": "^16.35.0",
+    "svelte-check": "^4.7.6",
+    "typescript": "^6.0.3",
+    "vite": "^8.3.4"
+  },
+  "private": true
+}

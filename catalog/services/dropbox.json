@@ -1,0 +1,38 @@
+{
+  "id": "dropbox",
+  "name": "Dropbox",
+  "category": "storage",
+  "aliases": [],
+  "icon": "/catalog/icons/dropbox.svg",
+  "iconSource": "https://simpleicons.org/",
+  "iconLicense": "CC0-1.0",
+  "source": "https://www.dropbox.com/plans",
+  "reviewedAt": "2026-10-16",
+  "regions": ["Availability and plan names vary by region"],
+  "plans": [
+    {
+      "id": "1",
+      "name": "Plus",
+      "kind": "recurring",
+      "retired": false
+    },
+    {
+      "id": "2",
+      "name": "Professional",
+      "kind": "recurring",
+      "retired": false
+    },
+    {
+      "id": "3",
+      "name": "Standard",
+      "kind": "recurring",
+      "retired": false
+    },
+    {
+      "id": "4",
+      "name": "Advanced",
+      "kind": "recurring",
+      "retired": false
+    }
+  ]
+}

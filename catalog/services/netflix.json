@@ -1,0 +1,32 @@
+{
+  "id": "netflix",
+  "name": "Netflix",
+  "category": "media",
+  "aliases": [],
+  "icon": "/catalog/icons/netflix.svg",
+  "iconSource": "https://simpleicons.org/",
+  "iconLicense": "CC0-1.0",
+  "source": "https://help.netflix.com/en/node/24926",
+  "reviewedAt": "2026-10-16",
+  "regions": ["Availability and plan names vary by region"],
+  "plans": [
+    {
+      "id": "1",
+      "name": "Standard with ads",
+      "kind": "recurring",
+      "retired": false
+    },
+    {
+      "id": "2",
+      "name": "Standard",
+      "kind": "recurring",
+      "retired": false
+    },
+    {
+      "id": "3",
+      "name": "Premium",
+      "kind": "recurring",
+      "retired": false
+    }
+  ]
+}

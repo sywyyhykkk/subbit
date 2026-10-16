@@ -5,7 +5,7 @@ record={'id':'smoke-1','name':'MCP smoke example','serviceId':None,'category':'o
 with tempfile.TemporaryDirectory(prefix='subbit-mcp-') as root:
  data=pathlib.Path(root)/'data';data.mkdir()
  (data/'subscriptions.json').write_text(json.dumps({'schemaVersion':1,'revision':0,'subscriptions':[],'settings':{'mcpEnabled':True,'autoRates':False},'rates':{},'imports':{}}))
- p=subprocess.Popen([str(binary),'--mcp'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,env={**os.environ,'SUBBIT_CONFIG_DIR':root})
+ p=subprocess.Popen([str(binary),'--mcp'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,encoding='utf-8',env={**os.environ,'SUBBIT_CONFIG_DIR':root})
  def request(id,method,params=None):
   p.stdin.write(json.dumps({'jsonrpc':'2.0','id':id,'method':method,'params':params or {}})+'\n');p.stdin.flush()
   response=json.loads(p.stdout.readline());assert response['id']==id and 'error' not in response,response
@@ -25,6 +25,6 @@ with tempfile.TemporaryDirectory(prefix='subbit-mcp-') as root:
  total=call(9,'get_summary',{'currency':'CNY','period':'month'})
  assert total['bill']=='100' and total['actual']=='50',total
  p.stdin.close();p.wait(timeout=10);assert p.returncode==0,p.stderr.read()
- assert json.loads((data/'subscriptions.json').read_text())['subscriptions'][0]['paymentMethod']=='card'
+ assert json.loads((data/'subscriptions.json').read_text(encoding='utf-8'))['subscriptions'][0]['paymentMethod']=='card'
  assert (data/'subscriptions.json.bak').exists()
  print('MCP smoke passed: initialize, catalog, preview, import, retry, list, summary, persisted backup.')

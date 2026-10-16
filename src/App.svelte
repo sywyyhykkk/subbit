@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from "svelte";
+  import Icon from "./Icon.svelte";
   import { invoke, isTauri } from "@tauri-apps/api/core";
   import { listen } from "@tauri-apps/api/event";
   import { open, save, confirm } from "@tauri-apps/plugin-dialog";
@@ -511,168 +512,51 @@
 </script>
 
 <div class:panel class="shell">
-  {#if !panel}<aside class="sidebar">
-      <a
-        class="brand"
-        href="/"
-        onclick={(e) => {
-          e.preventDefault();
-          category = "all";
-        }}
-        ><span class="brand-icon">s<span>·</span></span><span
-          >subbit<small
-            >{tr("数字生活，心中有数", "Your digital life, in view")}</small
-          ></span
-        ></a
-      >
-      <div class="nav-title">{tr("我的资产", "LIBRARY")}</div>
-      <button
-        class:chosen={category === "all"}
-        class="nav-item"
-        onclick={() => (category = "all")}
-        ><span>▦</span>{tr("全部资产", "All assets")}<b>{entries.length}</b
-        ></button
-      >
-      <div class="nav-title category-heading">{tr("分类", "CATEGORIES")}</div>
-      {#each categories as cat}<button
-          class:chosen={category === cat.id}
-          class="nav-item"
-          onclick={() => (category = cat.id)}
-          ><span>{cat.icon}</span>{en ? cat.en : cat.zh}<b
-            >{entries.filter((s) => s.category === cat.id).length || ""}</b
-          ></button
-        >{/each}
-      <div class="sidebar-bottom">
-        <div class="local-note">
-          <span class="status-dot"></span>{tr(
-            "本地存储 · 由你掌握",
-            "Local data. Yours to keep.",
-          )}
-        </div>
-        <button class="nav-item settings-link" onclick={settings}
-          ><span>⚙</span>{tr("设置", "Settings")}</button
-        >
-      </div>
-    </aside>{/if}
   <main>
     <header class="page-header">
-      <div>
-        <div class="eyebrow">
-          {panel
-            ? "SUBBIT"
-            : tr("轻一点，清楚一点", "A LITTLE LESS, A LITTLE CLEARER")}
-        </div>
-        <h1>
-          {category === "all"
-            ? tr("我的数字生活", "My digital life")
-            : categoryName(category)}{#if snap?.level}<span class="level"
-              >{snap.level}</span
-            >{/if}
-        </h1>
+      <div class="page-title"><h1>Subbit</h1><span>{tr("数字资产", "Digital assets")}</span>{#if snap?.level}<span class="level">{snap.level}</span>{/if}</div>
+      <div class="header-actions">
+        {#if !panel}<button class="icon-button" aria-label={tr("设置", "Settings")} title={tr("设置", "Settings")} onclick={settings}><Icon name="settings"/></button>{/if}
+        <button class="primary" onclick={picker}><Icon name="plus"/>{tr("新增资产", "Add asset")}</button>
       </div>
-      <button class="primary" onclick={picker}
-        ><span>＋</span>{tr("新增", "Add new")}</button
-      >
     </header>
-    <div class="summary-controls">
-      <span
-        >{tr(
-          "每一份订阅，都看得见。",
-          "Every subscription, accounted for.",
-        )}</span
-      >
-      <div class="controls">
-        <select
-          aria-label={tr("显示币种", "Display currency")}
-          bind:value={currency}
-          onchange={() => reload()}
-          >{#each currencies.slice(0, 26) as c}<option>{c}</option
-            >{/each}</select
-        >
-        <div class="segmented">
-          {#each ["hour", "month", "year"] as unit}<button
-              class:active={period === unit}
-              onclick={() => {
-                period = unit;
-                void reload();
-              }}>{tr("每", "/")}{unitLabel(unit)}</button
-            >{/each}
+    <section class="overview" aria-label={tr("成本总览", "Cost overview")}>
+      <div class="overview-heading"><span>{tr("全部资产的均摊成本", "Average cost of all assets")}</span>
+        <div class="controls"><select aria-label={tr("显示币种", "Display currency")} bind:value={currency} onchange={() => reload()}>{#each currencies.slice(0, 26) as c}<option>{c}</option>{/each}</select>
+          <div class="segmented">{#each ["hour", "month", "year"] as unit}<button class:active={period === unit} aria-pressed={period === unit} onclick={() => {period = unit; void reload();}}>{tr("每", "/")}{unitLabel(unit)}</button>{/each}</div>
         </div>
       </div>
-    </div>
-    <section class="summary-grid" aria-label={tr("成本总览", "Cost overview")}>
-      <div class="cost-card personal">
-        <div class="card-label">
-          <span>{tr("实际花销", "Personal cost")}</span><span
-            class="little-symbol">↗</span
-          >
-        </div>
-        <div class="amount">
-          {money(snap?.summary.actual)}<small>/ {unitLabel(period)}</small>
-        </div>
-        <div class="card-foot">
-          {tr("报销后，由自己承担的部分", "What you pay, after reimbursement")}
-        </div>
-      </div>
-      <div class="cost-card bill">
-        <div class="card-label">{tr("账单花销", "Billed cost")}</div>
-        <div class="amount">
-          {money(snap?.summary.bill)}<small>/ {unitLabel(period)}</small>
-        </div>
-        <div class="card-foot">
-          {tr("报销抵扣", "Reimbursed")}<strong
-            >{money(snap?.summary.reimbursed)}</strong
-          >
-        </div>
+      <div class="summary-grid">
+        <div class="personal"><div class="card-label">{tr("实际花销", "Personal cost")}</div><div class="amount">{money(snap?.summary.actual)}<small>/ {unitLabel(period)}</small></div><div class="card-foot">{tr("报销后个人承担", "After reimbursement")}</div></div>
+        <div class="secondary-costs"><div class="bill"><div class="card-label">{tr("账单花销", "Billed cost")}</div><div class="secondary-amount">{money(snap?.summary.bill)}</div></div><div class="reimbursed"><div class="card-label">{tr("报销抵扣", "Reimbursed")}</div><div class="secondary-amount">{money(snap?.summary.reimbursed)}</div></div></div>
       </div>
     </section>
-    <div class="summary-note">
-      <span
-        >{snap?.summary.activeCount ?? 0}
-        {tr("项生效资产", "active assets")} · {tr(
-          "周期订阅 + 买断均摊",
-          "Subscriptions + lifetime averages",
-        )}</span
-      ><span>{tr("均摊成本，非扣款流水", "Amortized cost")}</span>
-    </div>
-    {#if snap?.summary.missingRates.length}<div class="banner warning">
-        {tr(
-          "部分币种缺少汇率，总额暂不可用。请在设置中更新或填写固定汇率。",
-          "Some exchange rates are missing. Update rates or add fixed rates in settings.",
-        )}<button onclick={settings}>{tr("设置汇率", "Set rates")}</button>
-      </div>{/if}
-    {#if !isTauri()}<div class="banner">
-        {tr(
-          "界面预览 · 数据保存和托盘功能请在桌面应用中使用",
-          "Interface preview · Open the desktop app for storage and tray features",
-        )}
-      </div>{/if}
+    {#if snap?.summary.missingRates.length}<div class="banner warning">{tr("部分币种缺少汇率，总额暂不可用。", "Some exchange rates are missing.")}<button onclick={settings}>{tr("设置汇率", "Set rates")}</button></div>{/if}
+    {#if !isTauri()}<div class="banner">{tr("界面预览 · 本地数据功能请在桌面应用中使用", "Interface preview · Local data features require the desktop app")}</div>{/if}
     <section class="assets-section">
       <div class="list-toolbar">
-        <div class="filter-tabs">
-          {#each [["all", "全部", "All"], ["recurring", "订阅", "Subscriptions"], ["lifetime", "买断", "Lifetime"]] as item}<button
-              class:active={filter === item[0]}
-              onclick={() => (filter = item[0])}>{item[en ? 2 : 1]}</button
-            >{/each}
+        <div class="filter-tabs" aria-label={tr("资产类型", "Asset type")}>
+          {#each [["all", "全部", "All"], ["recurring", "订阅", "Subscriptions"], ["lifetime", "买断", "Lifetime"]] as item}
+            <button class:active={filter === item[0]} aria-pressed={filter === item[0]} onclick={() => filter = item[0]}>{item[en ? 2 : 1]}</button>
+          {/each}
         </div>
-        <input
-          class="search"
-          aria-label={tr("搜索资产", "Search assets")}
-          placeholder={tr("搜索资产…", "Search assets…")}
-          bind:value={search}
-        />
+        <div class="list-filters">
+          <select class="category-filter" aria-label={tr("筛选分类", "Filter category")} bind:value={category}>
+            <option value="all">{tr("全部分类", "All categories")}</option>
+            {#each categories as c}<option value={c.id}>{en ? c.en : c.zh}</option>{/each}
+          </select>
+          <label class="search-field"><Icon name="search" size={16}/><input class="search" aria-label={tr("搜索资产", "Search assets")} placeholder={tr("搜索资产", "Search assets")} bind:value={search}/></label>
+        </div>
       </div>
       {#if loading}<div class="empty-state">
           {tr("正在读取本地数据…", "Loading your local data…")}
         </div>
       {:else if !filtered.length}<div class="empty-state">
-          <div class="empty-illustration">
-            <span>♫</span><span>✳</span><span>⌘</span>
-          </div>
+
           <h2>
             {entries.length
               ? tr("没有匹配的资产", "No matching assets")
-              : tr("给数字生活，记一笔", "Make room for a clearer picture")}
+              : tr("还没有数字资产", "No assets yet")}
           </h2>
           <p>
             {entries.length
@@ -682,9 +566,8 @@
                   "Start with a subscription and see where it all goes.",
                 )}
           </p>
-          <button class="primary" onclick={picker}
-            >＋ {tr("添加第一项资产", "Add an asset")}</button
-          >
+          {#if entries.length}<button onclick={() => { category = "all"; filter = "all"; search = ""; }}>{tr("清除筛选", "Clear filters")}</button>
+          {:else}<button class="primary" onclick={picker}><Icon name="plus"/>{tr("添加资产", "Add an asset")}</button>{/if}
         </div>
       {:else}<div class="list-head">
           <span>{tr("服务 / 套餐", "SERVICE / PLAN")}</span><span
@@ -748,22 +631,11 @@
                     ? tr("含报销抵扣", "After reimbursement")
                     : tr("均摊成本", "Average cost")}</span
                 ></span
-              ><span class="chevron">›</span>
+              ><span class="chevron"><Icon name="chevron" size={16}/></span>
             </button>{/each}
         </div>{/if}
     </section>
-    <footer>
-      <span
-        ><span class="status-dot"></span>{tr(
-          "数据只保存在你的设备",
-          "Stored on your device",
-        )}</span
-      >{#if panel}<button onclick={() => call("open_main")}
-          >{tr("打开完整窗口", "Open window")} ↗</button
-        >{:else}<button onclick={settings}
-          >{tr("管理数据与设置", "Data & settings")} ↗</button
-        >{/if}
-    </footer>
+    <footer><span>{filtered.length} / {entries.length} {tr("项资产", "assets")}<span class="footer-separator">·</span>{tr("本地保存", "Saved locally")}</span>{#if panel}<button onclick={() => call("open_main")}>{tr("打开窗口", "Open window")}<Icon name="arrow" size={16}/></button>{:else}<span>{tr("当前成本折算，非扣款流水", "Amortized cost, not transactions")}</span>{/if}</footer>
   </main>
 </div>
 
@@ -778,15 +650,12 @@
 >
   {#if modal === "picker"}<div class="dialog-header">
       <div>
-        <div class="eyebrow">
-          {tr("从熟悉的服务开始", "START WITH SOMETHING FAMILIAR")}
-        </div>
         <h2>{tr("新增数字资产", "Add a digital asset")}</h2>
       </div>
       <button
         class="icon-button"
         aria-label={tr("关闭", "Close")}
-        onclick={() => (modal = "")}>×</button
+        onclick={() => (modal = "")}><Icon name="close" size={16}/></button
       >
     </div>
     <div class="dialog-content">
@@ -810,7 +679,7 @@
       </div>
       <div class="service-grid">
         <button class="service-choice custom" onclick={() => choose()}
-          ><span class="service-icon">＋</span><strong
+          ><span class="service-icon"><Icon name="plus" size={22}/></span><strong
             >{pickerSearch
               ? tr(`创建「${pickerSearch}」`, `Create “${pickerSearch}”`)
               : tr("自定义服务", "Custom service")}</strong
@@ -849,9 +718,6 @@
     >
       <div class="dialog-header">
         <div>
-          <div class="eyebrow">
-            {tr("记录一份数字生活", "A PART OF YOUR DIGITAL LIFE")}
-          </div>
           <h2>
             {entries.some((s) => s.id === record.id)
               ? tr("编辑资产", "Edit asset")
@@ -862,7 +728,7 @@
           type="button"
           class="icon-button"
           aria-label={tr("关闭", "Close")}
-          onclick={() => (modal = "")}>×</button
+          onclick={() => (modal = "")}><Icon name="close" size={16}/></button
         >
       </div>
       <div class="dialog-content form-body">
@@ -926,7 +792,7 @@
                 record.kind = "recurring";
                 setKind();
               }}
-            /><span>↻ {tr("周期订阅", "Subscription")}</span></label
+            /><span><Icon name="refresh" size={16}/>{tr("周期订阅", "Subscription")}</span></label
           ><label class:active={record.kind === "lifetime"}
             ><input
               type="radio"
@@ -936,7 +802,7 @@
                 record.kind = "lifetime";
                 setKind();
               }}
-            /><span>∞ {tr("一次买断", "Lifetime purchase")}</span></label
+            /><span><Icon name="infinity" size={16}/>{tr("一次买断", "Lifetime purchase")}</span></label
           >
         </fieldset>
         <div class="form-grid">
@@ -1105,7 +971,7 @@
             type="button"
             class="text-button"
             onclick={() => (modal = "picker")}
-            >← {tr("选择服务", "Choose service")}</button
+            ><Icon name="back" size={16}/>{tr("选择服务", "Choose service")}</button
           >{/if}
         <div>
           <button type="button" onclick={() => (modal = "")}
@@ -1120,8 +986,7 @@
     </form>
   {:else if modal === "settings"}<div class="dialog-header">
       <div>
-        <div class="eyebrow">SUBBIT · 0.1.0</div>
-        <h2>{tr("让它更适合你", "Make it yours")}</h2>
+        <h2>{tr("设置", "Settings")}</h2>
       </div>
       <button
         class="icon-button"
@@ -1129,7 +994,7 @@
         onclick={() => {
           modal = "";
           preview = null;
-        }}>×</button
+        }}><Icon name="close" size={16}/></button
       >
     </div>
     <div class="settings-tabs">
@@ -1203,10 +1068,10 @@
               /><input
                 aria-label={tr("等级名称", "Level name")}
                 bind:value={level.name}
-              /><button onclick={() => prefs.levels.splice(i, 1)}>×</button>
+              /><button onclick={() => prefs.levels.splice(i, 1)}><Icon name="close" size={16}/></button>
             </div>{/each}<button
             onclick={() => prefs.levels.push({ above: "100", name: "" })}
-            >＋ {tr("添加等级", "Add level")}</button
+            ><Icon name="plus" size={16}/>{tr("添加等级", "Add level")}</button
           >{/if}
         <div class="switch-row">
           <span
@@ -1266,7 +1131,7 @@
                     "Some rates failed; cache retained",
                   )
                 : tr("汇率已更新", "Rates updated");
-            })}>↻ {tr("立即更新", "Update now")}</button
+            })}><Icon name="refresh" size={16}/>{tr("立即更新", "Update now")}</button
         >
         <div class="rate-input">
           <select bind:value={rateCode}
@@ -1288,7 +1153,7 @@
                   ></span
                 >{#if prefs.fixedRates[c]}<button
                     aria-label={tr("移除固定汇率", "Remove fixed rate")}
-                    onclick={() => delete prefs.fixedRates[c]}>×</button
+                    onclick={() => delete prefs.fixedRates[c]}><Icon name="close" size={16}/></button
                   >{/if}
               </div>{/if}{/each}
         </div>
@@ -1316,9 +1181,9 @@
         <div class="divider"></div>
         <div class="button-row">
           <button disabled={busy} onclick={exportData}
-            >↗ {tr("导出备份", "Export backup")}</button
+            ><Icon name="upload" size={16}/>{tr("导出备份", "Export backup")}</button
           ><button disabled={busy} onclick={importData}
-            >↙ {tr("导入 JSON", "Import JSON")}</button
+            ><Icon name="download" size={16}/>{tr("导入 JSON", "Import JSON")}</button
           >
         </div>
         {#if preview}<div class="import-preview">
@@ -1385,19 +1250,19 @@
       </div>
     </div>{/if}
   {#if error}<div class="dialog-error" role="alert">
-      {error}<button onclick={() => (error = "")}>×</button>
+      {error}<button onclick={() => (error = "")}><Icon name="close" size={16}/></button>
     </div>{/if}
 </dialog>
 {#if error && !modal}<div class="toast error" role="alert">
     <span>{error}</span><button onclick={locateData}
       >{tr("定位数据", "Locate data")}</button
     ><button aria-label={tr("关闭", "Close")} onclick={() => (error = "")}
-      >×</button
+      ><Icon name="close" size={16}/></button
     >
   </div>{/if}
 {#if notice}<div class="toast" role="status">
     <span>{notice}</span><button
       aria-label={tr("关闭", "Close")}
-      onclick={() => (notice = "")}>×</button
+      onclick={() => (notice = "")}><Icon name="close" size={16}/></button
     >
   </div>{/if}

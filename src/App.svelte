@@ -56,7 +56,7 @@
     category = $state("all"),
     search = $state(""),
     filter = $state("all");
-  let sortBy = $state("added"), sortOrder = $state("desc");
+  let sortBy = $state("added"), sortOrder = $state("desc"), paymentFilter = $state("all");
   let offline = $state(false);
   let version = $state(appInfo.version);
   let update: Update | null = $state(null);
@@ -105,6 +105,7 @@
       (s) =>
         (category === "all" || s.category === category) &&
         (filter === "all" || s.kind === filter) &&
+        (paymentFilter === "all" || s.paymentMethod === paymentFilter) &&
         `${s.name} ${s.plan} ${s.registrar ?? ""} ${s.notes}`
           .toLowerCase()
           .includes(search.toLowerCase()),
@@ -781,6 +782,7 @@
       </div>
       <div class="list-head">
         <div class="sort-controls"><span>{tr("服务 / 套餐", "Service / Plan")}</span>
+          <select aria-label={tr("支付方式", "Payment method")} bind:value={paymentFilter}><option value="all">{tr("全部支付方式", "All payments")}</option><option value="">{tr("未设置", "Not set")}</option>{#each paymentMethods as method}<option value={method[0]}>{method[en ? 2 : 1]}</option>{/each}</select>
           <select aria-label={tr("排序依据", "Sort by")} bind:value={sortBy}><option value="added">{tr("添加时间", "Date added")}</option><option value="price">{tr("价格", "Price")}</option></select>
           <select aria-label={tr("排序方向", "Sort order")} bind:value={sortOrder}><option value="desc">{tr("降序", "Descending")}</option><option value="asc">{tr("升序", "Ascending")}</option></select>
         </div><span>{labels.personalCost} / {unitLabel(period)}</span>
@@ -795,7 +797,7 @@
               ? tr("没有匹配的资产", "No matching assets")
               : tr("还没有数字资产", "No assets yet")}
           </h2>
-          {#if entries.length}<button onclick={() => { category = "all"; filter = "all"; search = ""; }}>{tr("清除筛选", "Clear filters")}</button>
+          {#if entries.length}<button onclick={() => { category = "all"; filter = "all"; paymentFilter = "all"; search = ""; }}>{tr("清除筛选", "Clear filters")}</button>
           {:else}<button class="primary" onclick={picker}><Icon name="plus"/>{labels.addAsset}</button>{/if}
         </div>
       {:else}<div class="asset-list">

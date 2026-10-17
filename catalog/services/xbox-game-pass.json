@@ -1,0 +1,49 @@
+{
+  "id": "xbox-game-pass",
+  "name": "Xbox Game Pass",
+  "category": "gaming",
+  "aliases": [
+    "XGP",
+    "PC Game Pass",
+    "微软游戏通行证",
+    "Xbox"
+  ],
+  "icon": "/catalog/icons/xbox-game-pass.png",
+  "iconSource": "https://www.xbox.com/favicon.ico",
+  "iconLicense": "Brand asset; respective owner retains rights",
+  "source": "https://www.xbox.com/en-US/xbox-game-pass",
+  "reviewedAt": "2026-10-18",
+  "regions": [
+    "Availability and plan names vary by region"
+  ],
+  "plans": [
+    {
+      "id": "essential",
+      "name": "Essential",
+      "kind": "recurring",
+      "retired": false,
+      "cycleUnit": "month"
+    },
+    {
+      "id": "premium",
+      "name": "Premium",
+      "kind": "recurring",
+      "retired": false,
+      "cycleUnit": "month"
+    },
+    {
+      "id": "ultimate",
+      "name": "Ultimate",
+      "kind": "recurring",
+      "retired": false,
+      "cycleUnit": "month"
+    },
+    {
+      "id": "pc-game-pass",
+      "name": "PC Game Pass",
+      "kind": "recurring",
+      "retired": false,
+      "cycleUnit": "month"
+    }
+  ]
+}

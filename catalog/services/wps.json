@@ -1,0 +1,33 @@
+{
+  "id": "wps",
+  "name": "WPS Office",
+  "category": "productivity",
+  "aliases": [
+    "WPS",
+    "WPS会员",
+    "金山办公",
+    "金山文档"
+  ],
+  "icon": "/catalog/icons/wps.svg",
+  "iconSource": "https://global-volc.wpscdn.cn/icons/pro/wps_logo.svg",
+  "iconLicense": "Brand asset; respective owner retains rights",
+  "source": "https://vip.wps.cn/home",
+  "reviewedAt": "2026-10-18",
+  "regions": [
+    "Mainland China WPS membership plans; billing periods and prices depend on purchase channel"
+  ],
+  "plans": [
+    {
+      "id": "super",
+      "name": "WPS 超级会员",
+      "kind": "recurring",
+      "retired": false
+    },
+    {
+      "id": "premium",
+      "name": "WPS 大会员",
+      "kind": "recurring",
+      "retired": false
+    }
+  ]
+}

@@ -1,0 +1,91 @@
+{
+  "id": "playstation-plus",
+  "name": "PlayStation Plus",
+  "category": "gaming",
+  "aliases": [
+    "PS Plus",
+    "PS+",
+    "PSN",
+    "索尼",
+    "PlayStation"
+  ],
+  "icon": "/catalog/icons/playstation-plus.svg",
+  "iconSource": "https://simpleicons.org/",
+  "iconLicense": "CC0-1.0",
+  "source": "https://www.playstation.com/en-us/ps-plus/",
+  "reviewedAt": "2026-10-18",
+  "regions": [
+    "United States plan names; availability, tiers and prices vary by PlayStation Store region"
+  ],
+  "plans": [
+    {
+      "id": "essential",
+      "name": "Essential",
+      "kind": "recurring",
+      "retired": false,
+      "prices": [
+        {
+          "amountUsd": "10.99",
+          "cycleUnit": "month"
+        },
+        {
+          "amountUsd": "27.99",
+          "cycleUnit": "month",
+          "cycleCount": 3
+        },
+        {
+          "amountUsd": "79.99",
+          "cycleUnit": "year"
+        }
+      ],
+      "priceSource": "https://www.playstation.com/en-us/ps-plus/",
+      "priceReviewedAt": "2026-10-18"
+    },
+    {
+      "id": "extra",
+      "name": "Extra",
+      "kind": "recurring",
+      "retired": false,
+      "prices": [
+        {
+          "amountUsd": "16.99",
+          "cycleUnit": "month"
+        },
+        {
+          "amountUsd": "43.99",
+          "cycleUnit": "month",
+          "cycleCount": 3
+        },
+        {
+          "amountUsd": "134.99",
+          "cycleUnit": "year"
+        }
+      ],
+      "priceSource": "https://www.playstation.com/en-us/ps-plus/",
+      "priceReviewedAt": "2026-10-18"
+    },
+    {
+      "id": "premium",
+      "name": "Premium",
+      "kind": "recurring",
+      "retired": false,
+      "prices": [
+        {
+          "amountUsd": "19.99",
+          "cycleUnit": "month"
+        },
+        {
+          "amountUsd": "54.99",
+          "cycleUnit": "month",
+          "cycleCount": 3
+        },
+        {
+          "amountUsd": "159.99",
+          "cycleUnit": "year"
+        }
+      ],
+      "priceSource": "https://www.playstation.com/en-us/ps-plus/",
+      "priceReviewedAt": "2026-10-18"
+    }
+  ]
+}

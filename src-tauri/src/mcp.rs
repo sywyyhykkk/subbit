@@ -29,9 +29,11 @@ fn call(name: &str, args: Value) -> Result<Value> {
         return Err("MCP is disabled. Enable Agent / MCP in Subbit settings first.".into());
     }
     match name {
-        "get_catalog" => Ok(
-            json!({"catalog":crate::catalog(),"currencies":CURRENCIES,"subscriptionSchema":serde_json::from_str::<Value>(include_str!("../../catalog/subscription.schema.json")).unwrap()}),
-        ),
+        "get_catalog" => {
+            let cache = crate::catalog::CatalogCache::system()?;
+            let catalog = cache.refresh(false).unwrap_or_else(|_| cache.load()).catalog;
+            Ok(json!({"catalog":catalog,"currencies":CURRENCIES,"subscriptionSchema":serde_json::from_str::<Value>(include_str!("../../catalog/subscription.schema.json")).unwrap()}))
+        }
         "list_subscriptions" => {
             Ok(json!({"subscriptions":db.subscriptions,"revision":db.revision}))
         }

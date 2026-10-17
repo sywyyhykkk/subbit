@@ -16,9 +16,9 @@
   import { open, save, confirm } from "@tauri-apps/plugin-dialog";
   import { enable, disable, isEnabled } from "@tauri-apps/plugin-autostart";
   import {
-    categories,
-    services,
-    serviceIcon,
+    categories as bundledCategories,
+    services as bundledServices,
+    serviceIcon as bundledServiceIcon,
     currencies,
     currencyNames,
     paymentMethods,
@@ -31,10 +31,20 @@
     Snapshot,
     Service,
     Database,
+    CatalogState,
   } from "./types";
 
   const panel = new URLSearchParams(location.search).has("panel");
   let snap: Snapshot | null = $state(null);
+  let directory: CatalogState = $state({ catalog: { schemaVersion: 1, categories: bundledCategories, services: bundledServices, icons: {} }, updatedAt: null });
+  let pendingDirectory: CatalogState | null = $state(null);
+  let catalogBusy = $state(false), catalogError = $state(false);
+  const categories = $derived(directory.catalog.categories);
+  const services = $derived(directory.catalog.services);
+  const serviceIcon = (id: string | null) => {
+    const service = services.find((s) => s.id === id);
+    return (service && directory.catalog.icons[service.icon]) || bundledServiceIcon(id);
+  };
   let loading = $state(true),
     busy = $state(false),
     error = $state(""),
@@ -80,6 +90,8 @@
     ratesUpdated: tr("汇率已更新", "Exchange rates updated"),
   });
   const entries = $derived.by(() => snap?.database.subscriptions ?? []);
+  const assetCategories = $derived([...categories, ...Array.from(new Set(entries.map((s) => s.category)))
+    .filter((id) => !categories.some((c) => c.id === id)).map((id) => ({ id, zh: id, en: id, icon: "" }))]);
   const filtered = $derived.by(() => {
     const rows = new Map(snap?.summary.rows.map((r) => [r.id, r.actual]));
     return entries.filter(
@@ -192,6 +204,30 @@
       );
     return invoke<T>(command, args);
   }
+  function applyDirectory(next: CatalogState) {
+    if (modal === "editor" || modal === "picker") pendingDirectory = next;
+    else directory = next;
+  }
+  async function loadDirectory() {
+    if (isTauri()) applyDirectory(await call<CatalogState>("load_catalog"));
+  }
+  async function refreshDirectory(force = false) {
+    if (!isTauri() || catalogBusy) return;
+    catalogBusy = true;
+    catalogError = false;
+    try {
+      applyDirectory(await call<CatalogState>("refresh_catalog", { force }));
+      if (force) notice = tr("目录已更新", "Catalog updated");
+    } catch {
+      if (force) catalogError = true;
+    } finally { catalogBusy = false; }
+  }
+  $effect(() => {
+    if (pendingDirectory && modal !== "editor" && modal !== "picker") {
+      directory = pendingDirectory;
+      pendingDirectory = null;
+    }
+  });
   async function reload(initial = false) {
     try {
       if (!isTauri()) {
@@ -335,6 +371,20 @@
   async function submit() {
     await action(async () => {
       const payload = structuredClone($state.snapshot(record));
+      if (!payload.icon && payload.serviceId && !entries.some((s) => s.id === payload.id)) {
+        const url = serviceIcon(payload.serviceId);
+        if (url) {
+          const image = new Image();
+          image.src = url;
+          await image.decode();
+          const canvas = document.createElement("canvas");
+          canvas.width = canvas.height = 96;
+          const size = Math.max(image.naturalWidth, image.naturalHeight);
+          canvas.getContext("2d")!.drawImage(image, (96 - image.naturalWidth / size * 96) / 2,
+            (96 - image.naturalHeight / size * 96) / 2, image.naturalWidth / size * 96, image.naturalHeight / size * 96);
+          payload.icon = canvas.toDataURL("image/png");
+        }
+      }
       payload.name = payload.name.trim();
       payload.expiresAt = payload.expiresAt || null;
       // Keep the original start-date anchor for month ends and leap years.
@@ -567,14 +617,16 @@
     appearance.addEventListener("change", changedAppearance);
     if (isTauri()) void getVersion().then((v) => version = v);
     void (async () => {
+      await loadDirectory().catch(() => {});
       await reload(true);
       if (new URLSearchParams(location.search).has("settings")) await settings();
       if (new URLSearchParams(location.search).has("about")) { await settings(); settingsTab = "about"; }
       if (isTauri()) {
         if (new URLSearchParams(location.search).has("add")) await picker();
-        for (const name of ["data-changed", "open-settings", "open-add", "open-about"]) {
+        for (const name of ["data-changed", "catalog-changed", "open-settings", "open-add", "open-about"]) {
           const unlisten = await listen(name, () => {
-            if (name === "open-about") void settings().then(() => settingsTab = "about");
+            if (name === "catalog-changed") void loadDirectory().catch(() => {});
+            else if (name === "open-about") void settings().then(() => settingsTab = "about");
             else if (name === "open-settings") void settings();
             else if (name === "open-add") void picker();
             else if (!modal) void reload();
@@ -583,22 +635,27 @@
           else cleanup.push(unlisten);
         }
         if (!modal) void rates();
+        void refreshDirectory();
       }
     })();
     const focus = () => {
       if (!modal) {
         void reload();
+        void loadDirectory().catch(() => {});
+        void refreshDirectory();
       }
     };
     window.addEventListener("focus", focus);
     const interval = setInterval(() => {
       if (document.hasFocus() && !modal && !busy) void reload();
     }, 15000);
+    const catalogInterval = setInterval(() => { if (document.hasFocus()) void refreshDirectory(); }, 15 * 60 * 1000);
     return () => {
       disposed = true;
       cleanup.forEach((f) => f());
       appearance.removeEventListener("change", changedAppearance);
       clearInterval(interval);
+      clearInterval(catalogInterval);
       window.removeEventListener("focus", focus);
     };
   });
@@ -637,7 +694,7 @@
         <div class="list-filters">
           <select class="category-filter" aria-label={tr("筛选分类", "Filter category")} bind:value={category}>
             <option value="all">{tr("全部分类", "All categories")}</option>
-            {#each categories as c}<option value={c.id}>{en ? c.en : c.zh}</option>{/each}
+            {#each assetCategories as c}<option value={c.id}>{en ? c.en : c.zh}</option>{/each}
           </select>
           <label class="search-field"><Icon name="search" size={16}/><input class="search" aria-label={tr("搜索资产", "Search assets")} placeholder={tr("搜索资产", "Search assets")} bind:value={search}/></label>
         </div>
@@ -861,7 +918,7 @@
         <div class="form-grid">
           <label
             >{tr("分类", "Category")}<select bind:value={record.category}
-              >{#each categories as c}<option value={c.id}
+              >{#if !categories.some((c) => c.id === record.category)}<option value={record.category}>{record.category}</option>{/if}{#each categories as c}<option value={c.id}
                   >{en ? c.en : c.zh}</option
                 >{/each}</select
             ></label
@@ -1311,6 +1368,10 @@
               >{tr("取消", "Cancel")}</button
             >
           </div>{/if}
+        <h3>{tr("服务目录", "Service catalog")}</h3>
+        <p class="hint">{services.length} {tr("项服务", "services")} · {categories.length} {tr("个分类", "categories")} · {directory.updatedAt ? new Date(directory.updatedAt * 1000).toLocaleDateString(en ? "en-US" : "zh-CN") : tr("内置目录", "Built-in catalog")}</p>
+        <button disabled={catalogBusy} onclick={() => refreshDirectory(true)}><Icon name="refresh" size={16}/>{catalogBusy ? tr("正在更新…", "Updating…") : tr("更新目录", "Update catalog")}</button>
+        {#if catalogError}<p class="hint" role="status">{tr("更新失败，继续使用本地目录", "Update failed. Using the local catalog.")}</p>{/if}
       {:else if settingsTab === "about"}<div class="about-app">
         <img class="app-icon" src={dark ? appDark : appLight} alt="Subbit"/>
         <h2>Subbit</h2><p>{tr("版本", "Version")} {version}</p>

@@ -10,7 +10,13 @@ Each service is one JSON file in `catalog/services/`; categories live in `catalo
 6. Bundle an SVG or PNG and record `iconSource` and `iconLicense`. Icons should work offline. Do not add tracking URLs or remote image loading.
 7. Run `npm run catalog:check`, `npm run test:pricing` and `npm run check`.
 
-The app and Rust MCP catalog are assembled from these files at build time. User records retain name, category, plan, original price and custom icon snapshots. Catalog changes do not rewrite saved subscriptions.
+The app includes an offline catalog assembled from these files at build time. After catalog changes merge into `main`, the **Publish service catalog** workflow validates and packs categories, services and icons into one `catalog.json` on the dedicated `catalog` branch. This does not create an app release. To publish the initial catalog or retry a failed publication, run that workflow manually. `npm run catalog:bundle` generates the same bundle locally in `artifacts/catalog.json`.
+
+Desktop and Rust MCP share a local catalog cache. The desktop loads cached data immediately, checks for updates on opening/focus and every 15 minutes while focused, and offers **Settings → Data → Update catalog**. Automatic attempts are at least 15 minutes apart; manual refresh bypasses that interval. MCP checks when `get_catalog` is called. An unavailable network, invalid bundle or failed write preserves the last complete cache; without a usable cache, the built-in catalog is used. Icons are embedded in the bundle and need no network once cached.
+
+The cache lives in `catalog-cache/` under the OS application configuration directory, separate from the asset JSON and its backups. User records retain name, category, plan, original price and custom icon snapshots. New desktop assets also snapshot the chosen catalog icon as PNG. Catalog changes never rewrite saved subscriptions, settings, exchange rates or their revision. Open asset forms keep the catalog they started with until closed.
+
+Install an app version with remote catalog support once. Later category, service, plan and icon changes require only a catalog publication. Incompatible catalog schema changes still require an app update; keep `schemaVersion: 1` for compatible directory changes.
 
 VPN intentionally has no provider list. Add it through Custom service and use the VPN category.
 

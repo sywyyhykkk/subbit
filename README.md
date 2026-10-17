@@ -114,6 +114,8 @@ See [MCP configuration and import examples](docs/MCP.md) and the [subscription J
 
 ## Contribute service presets
 
+Catalog changes merged into `main` are published independently by the **Publish service catalog** workflow, without an app release. Desktop and MCP share an offline cache of categories, services, plans and icons; failed updates retain the last good cache, with the embedded catalog as the initial fallback. Refresh manually in **Settings → Data → Update catalog**. The catalog cache never rewrites saved assets, settings or exchange rates. Existing installations need one app upgrade to gain remote catalog support. See [the catalog guide](catalog/CONTRIBUTING.md) for publication and caching details.
+
 Presets are shared by the desktop picker and MCP. To add a service or fix its plans:
 
 1. Copy a similar JSON file in `catalog/services/`. Give it a stable lowercase kebab-case ID matching its filename, the official name, search aliases, category, source URL, review date and region information.

@@ -10,12 +10,15 @@ use std::{
 pub struct Store {
     root: PathBuf,
 }
+pub(crate) fn config_root() -> Result<PathBuf> {
+    std::env::var_os("SUBBIT_CONFIG_DIR")
+        .map(PathBuf::from)
+        .or_else(|| dirs::config_dir().map(|p| p.join("com.sywyyhykkk.subbit")))
+        .ok_or_else(|| "Cannot locate config directory".into())
+}
 impl Store {
     pub fn system() -> Result<Self> {
-        let root = std::env::var_os("SUBBIT_CONFIG_DIR")
-            .map(PathBuf::from)
-            .or_else(|| dirs::config_dir().map(|p| p.join("com.sywyyhykkk.subbit")))
-            .ok_or("Cannot locate config directory")?;
+        let root = config_root()?;
         fs::create_dir_all(&root).map_err(|e| e.to_string())?;
         Ok(Self { root })
     }

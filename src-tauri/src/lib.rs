@@ -1,4 +1,5 @@
 pub mod mcp;
+pub mod catalog;
 pub mod model;
 mod rates;
 pub mod store;
@@ -13,8 +14,22 @@ use tauri::{
 };
 
 pub fn catalog() -> Value {
-    serde_json::from_str(include_str!(concat!(env!("OUT_DIR"), "/catalog.json")))
-        .expect("validated embedded catalog")
+    serde_json::to_value(catalog::CatalogCache::system().map(|c| c.load().catalog)
+        .unwrap_or_else(|_| catalog::bundled())).expect("catalog serialization")
+}
+pub(crate) fn init_tls() {
+    let _ = rustls::crypto::ring::default_provider().install_default();
+}
+#[tauri::command]
+fn load_catalog() -> Result<catalog::CatalogState> {
+    Ok(catalog::CatalogCache::system()?.load())
+}
+#[tauri::command]
+async fn refresh_catalog(force: bool, app: tauri::AppHandle) -> Result<catalog::CatalogState> {
+    let state = tauri::async_runtime::spawn_blocking(move || catalog::CatalogCache::system()?.refresh(force))
+        .await.map_err(|e| e.to_string())??;
+    let _ = app.emit("catalog-changed", ());
+    Ok(state)
 }
 #[tauri::command]
 fn snapshot(currency: Option<String>, period: Option<String>) -> Result<Value> {
@@ -217,6 +232,7 @@ fn show_panel(app: &tauri::AppHandle, position: tauri::PhysicalPosition<f64>) ->
     Ok(())
 }
 pub fn run() {
+    init_tls();
     tauri::Builder::default()
         .plugin(tauri_plugin_single_instance::init(|app, _, _| {
             let _ = show_main(app, "");
@@ -231,6 +247,8 @@ pub fn run() {
                 .build(),
         )
         .invoke_handler(tauri::generate_handler![
+            load_catalog,
+            refresh_catalog,
             snapshot,
             save_subscription,
             delete_subscription,

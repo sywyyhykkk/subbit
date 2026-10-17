@@ -1,11 +1,14 @@
 """Exercise the real stdio executable with isolated local data, no Agent runtime needed."""
-import json, os, pathlib, subprocess, sys, tempfile
+import json, os, pathlib, subprocess, sys, tempfile, time
 repo=pathlib.Path(__file__).resolve().parents[1]
 binary=pathlib.Path(sys.argv[1]).resolve() if len(sys.argv)>1 else repo/'src-tauri'/'target'/'debug'/('subbit.exe' if os.name=='nt' else 'subbit')
 record={'id':'smoke-1','name':'MCP smoke example','serviceId':None,'category':'other','plan':'Annual','icon':None,'amount':'1200','currency':'CNY','kind':'recurring','cycleUnit':'year','cycleCount':1,'purchasedAt':'2025-01-31','expiresAt':None,'autoRenew':True,'active':True,'reimbursement':'fixed','reimbursementValue':'600','paymentMethod':'card','notes':'Test fixture','fixedUsdRate':None}
 with tempfile.TemporaryDirectory(prefix='subbit-mcp-') as root:
  data=pathlib.Path(root)/'data';data.mkdir()
  (data/'subscriptions.json').write_text(json.dumps({'schemaVersion':1,'revision':0,'subscriptions':[],'settings':{'mcpEnabled':True,'autoRates':False},'rates':{},'imports':{}}))
+ cache=pathlib.Path(root)/'catalog-cache';cache.mkdir()
+ # Keep this smoke check offline and independent of the published directory.
+ (cache/'checked.json').write_text(json.dumps(int(time.time())))
  p=subprocess.Popen([str(binary),'--mcp'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,encoding='utf-8',env={**os.environ,'SUBBIT_CONFIG_DIR':root})
  def request(id,method,params=None):
   p.stdin.write(json.dumps({'jsonrpc':'2.0','id':id,'method':method,'params':params or {}})+'\n');p.stdin.flush()
@@ -23,6 +26,11 @@ with tempfile.TemporaryDirectory(prefix='subbit-mcp-') as root:
  expected_services=[json.loads(path.read_text(encoding='utf-8')) for path in sorted((repo/'catalog'/'services').glob('*.json'))]
  assert catalog['services']==expected_services
  assert catalog['categories']==json.loads((repo/'catalog'/'categories.json').read_text(encoding='utf-8'))
+ before=(data/'subscriptions.json').read_bytes()
+ cached=json.loads(json.dumps(catalog));extra=dict(cached['services'][0]);extra['id']='offline-cache-example';extra['name']='Offline cache example';cached['services'].append(extra)
+ (cache/'catalog.json').write_text(json.dumps({'catalog':cached,'updatedAt':int(time.time())}),encoding='utf-8')
+ assert call(30,'get_catalog')['catalog']==cached
+ assert (data/'subscriptions.json').read_bytes()==before
  assert call(4,'preview_import',{'records':[record]})['added']==1
  assert call(5,'list_subscriptions')['subscriptions']==[]
  assert call(6,'import_subscriptions',{'importId':'test-import','records':[record]})['added']==1

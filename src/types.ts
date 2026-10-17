@@ -65,6 +65,22 @@ export interface Snapshot {
     activeCount: number;
   };
 }
+export interface Category {
+  id: string;
+  zh: string;
+  en: string;
+  icon: string;
+}
+export interface Catalog {
+  schemaVersion: number;
+  categories: Category[];
+  services: Service[];
+  icons: Record<string, string>;
+}
+export interface CatalogState {
+  catalog: Catalog;
+  updatedAt: number | null;
+}
 export interface Service {
   id: string;
   name: string;

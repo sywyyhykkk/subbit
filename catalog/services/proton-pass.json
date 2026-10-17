@@ -1,0 +1,33 @@
+{
+  "id": "proton-pass",
+  "name": "Proton Pass",
+  "category": "security",
+  "aliases": [
+    "ProtonPass",
+    "Pass Plus",
+    "密码管理",
+    "密码管理器"
+  ],
+  "icon": "/catalog/icons/proton-pass.svg",
+  "iconSource": "https://pmecdn.protonweb.com/image-transformation/?image=image%2Fupload%2Fv1776940263%2Fstatic%2Flogos%2Fpass%2Fpass-badge.svg&s=c",
+  "iconLicense": "Brand asset; respective owner retains rights",
+  "source": "https://proton.me/pass/pricing",
+  "reviewedAt": "2026-10-18",
+  "regions": [
+    "Availability and plan names vary by region"
+  ],
+  "plans": [
+    {
+      "id": "pass-plus",
+      "name": "Pass Plus",
+      "kind": "recurring",
+      "retired": false
+    },
+    {
+      "id": "pass-family",
+      "name": "Pass Family",
+      "kind": "recurring",
+      "retired": false
+    }
+  ]
+}

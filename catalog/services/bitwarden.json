@@ -1,0 +1,82 @@
+{
+  "id": "bitwarden",
+  "name": "Bitwarden",
+  "category": "security",
+  "aliases": [
+    "比特沃登",
+    "密码管理",
+    "密码管理器"
+  ],
+  "icon": "/catalog/icons/bitwarden.svg",
+  "iconSource": "https://simpleicons.org/",
+  "iconLicense": "CC0-1.0",
+  "source": "https://bitwarden.com/pricing/",
+  "reviewedAt": "2026-10-18",
+  "regions": [
+    "USD list prices billed annually, excluding taxes; availability may vary by region"
+  ],
+  "plans": [
+    {
+      "id": "premium",
+      "name": "Premium",
+      "kind": "recurring",
+      "retired": false,
+      "cycleUnit": "year",
+      "prices": [
+        {
+          "amountUsd": "19.80",
+          "cycleUnit": "year"
+        }
+      ],
+      "priceSource": "https://bitwarden.com/pricing/",
+      "priceReviewedAt": "2026-10-18"
+    },
+    {
+      "id": "families",
+      "name": "Families",
+      "kind": "recurring",
+      "retired": false,
+      "cycleUnit": "year",
+      "prices": [
+        {
+          "amountUsd": "47.88",
+          "cycleUnit": "year"
+        }
+      ],
+      "priceSource": "https://bitwarden.com/pricing/",
+      "priceReviewedAt": "2026-10-18"
+    },
+    {
+      "id": "teams",
+      "name": "Teams",
+      "kind": "recurring",
+      "retired": false,
+      "cycleUnit": "year",
+      "prices": [
+        {
+          "amountUsd": "48.00",
+          "cycleUnit": "year"
+        }
+      ],
+      "priceBasis": "per-seat",
+      "priceSource": "https://bitwarden.com/pricing/",
+      "priceReviewedAt": "2026-10-18"
+    },
+    {
+      "id": "enterprise",
+      "name": "Enterprise",
+      "kind": "recurring",
+      "retired": false,
+      "cycleUnit": "year",
+      "prices": [
+        {
+          "amountUsd": "72.00",
+          "cycleUnit": "year"
+        }
+      ],
+      "priceBasis": "per-seat",
+      "priceSource": "https://bitwarden.com/pricing/",
+      "priceReviewedAt": "2026-10-18"
+    }
+  ]
+}

@@ -6,6 +6,12 @@
     "icon": "♫"
   },
   {
+    "id": "gaming",
+    "zh": "游戏",
+    "en": "Gaming",
+    "icon": "🎮"
+  },
+  {
     "id": "productivity",
     "zh": "生产力",
     "en": "Productivity",
@@ -40,6 +46,12 @@
     "zh": "设计创作",
     "en": "Design",
     "icon": "◈"
+  },
+  {
+    "id": "security",
+    "zh": "安全隐私",
+    "en": "Security & privacy",
+    "icon": "🔒"
   },
   {
     "id": "vpn",

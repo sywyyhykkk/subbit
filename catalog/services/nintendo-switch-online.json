@@ -1,0 +1,89 @@
+{
+  "id": "nintendo-switch-online",
+  "name": "Nintendo Switch Online",
+  "category": "gaming",
+  "aliases": [
+    "NSO",
+    "Switch Online",
+    "任天堂",
+    "任天堂会员"
+  ],
+  "icon": "/catalog/icons/nintendo-switch-online.png",
+  "iconSource": "https://assets.nintendo.com/image/upload/ncom/icons/fav-icons/apple-touch-icon.png",
+  "iconLicense": "Brand asset; respective owner retains rights",
+  "source": "https://www.nintendo.com/us/online/",
+  "reviewedAt": "2026-10-18",
+  "regions": [
+    "United States USD list prices; availability and prices vary by Nintendo Account country"
+  ],
+  "plans": [
+    {
+      "id": "individual",
+      "name": "Individual membership",
+      "kind": "recurring",
+      "retired": false,
+      "prices": [
+        {
+          "amountUsd": "3.99",
+          "cycleUnit": "month"
+        },
+        {
+          "amountUsd": "7.99",
+          "cycleUnit": "month",
+          "cycleCount": 3
+        },
+        {
+          "amountUsd": "19.99",
+          "cycleUnit": "year"
+        }
+      ],
+      "priceSource": "https://en-americas-support.nintendo.com/app/answers/detail/a_id/41195/p/897/c/976",
+      "priceReviewedAt": "2026-10-18"
+    },
+    {
+      "id": "family",
+      "name": "Family membership",
+      "kind": "recurring",
+      "retired": false,
+      "cycleUnit": "year",
+      "prices": [
+        {
+          "amountUsd": "34.99",
+          "cycleUnit": "year"
+        }
+      ],
+      "priceSource": "https://en-americas-support.nintendo.com/app/answers/detail/a_id/41195/p/897/c/976",
+      "priceReviewedAt": "2026-10-18"
+    },
+    {
+      "id": "individual-expansion-pack",
+      "name": "Individual membership + Expansion Pack",
+      "kind": "recurring",
+      "retired": false,
+      "cycleUnit": "year",
+      "prices": [
+        {
+          "amountUsd": "49.99",
+          "cycleUnit": "year"
+        }
+      ],
+      "priceSource": "https://en-americas-support.nintendo.com/app/answers/detail/a_id/41195/p/897/c/976",
+      "priceReviewedAt": "2026-10-18"
+    },
+    {
+      "id": "family-expansion-pack",
+      "name": "Family membership + Expansion Pack",
+      "kind": "recurring",
+      "retired": false,
+      "cycleUnit": "year",
+      "prices": [
+        {
+          "amountUsd": "79.99",
+          "cycleUnit": "year"
+        }
+      ],
+      "priceSource": "https://en-americas-support.nintendo.com/app/answers/detail/a_id/41195/p/897/c/976",
+      "priceReviewedAt": "2026-10-18"
+    }
+  ]
+}

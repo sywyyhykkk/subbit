@@ -1,0 +1,27 @@
+{
+  "id": "bilibili",
+  "name": "哔哩哔哩大会员",
+  "category": "media",
+  "aliases": [
+    "Bilibili",
+    "B站",
+    "b站大会员",
+    "哔哩哔哩"
+  ],
+  "icon": "/catalog/icons/bilibili.svg",
+  "iconSource": "https://simpleicons.org/",
+  "iconLicense": "CC0-1.0",
+  "source": "https://www.bilibili.com/html/big_protocol.html",
+  "reviewedAt": "2026-10-18",
+  "regions": [
+    "Mainland China bilibili membership; prices and durations depend on purchase channel"
+  ],
+  "plans": [
+    {
+      "id": "premium",
+      "name": "大会员",
+      "kind": "recurring",
+      "retired": false
+    }
+  ]
+}

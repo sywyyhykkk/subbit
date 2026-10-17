@@ -76,6 +76,7 @@ export interface Service {
     id: string;
     name: string;
     kind: "recurring" | "lifetime";
+    cycleUnit?: "day" | "week" | "month" | "year";
     retired: boolean;
   }[];
 }

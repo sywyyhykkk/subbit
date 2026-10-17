@@ -242,6 +242,7 @@
       record.category = service.category;
       record.plan = service.plans[0]?.name ?? "";
       record.kind = service.plans[0]?.kind ?? "recurring";
+      record.cycleUnit = service.plans[0]?.cycleUnit ?? record.cycleUnit;
     } else if (custom) {
       record.name = custom.name;
       record.icon = custom.icon;
@@ -274,6 +275,10 @@
     const plan = selectedService?.plans.find((p) => p.name === record.plan);
     if (plan) {
       record.kind = plan.kind;
+      if (plan.cycleUnit) {
+        record.cycleUnit = plan.cycleUnit;
+        record.cycleCount = 1;
+      }
       setKind();
     }
   }

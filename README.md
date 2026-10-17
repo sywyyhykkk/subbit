@@ -11,7 +11,7 @@ Rust + Tauri 2 + Svelte 5. macOS and Windows. No account, server, or bundled bro
 - Recurring purchases with an optional expiry date and calendar-aware automatic renewal. Turn off renewal to stop counting a subscription after its expiry day.
 - Lifetime purchases amortized over elapsed calendar days. As ownership time grows, average cost decreases.
 - Full, fixed-amount and percentage reimbursement; Apple App Store, Google Play, bank card, Alipay, WeChat Pay, PayPal, crypto and other payment methods.
-- 36 bundled services across media, productivity, AI, cloud storage, developer tools and design. VPN is a generic category; custom names, plans and local icons are supported.
+- 37 bundled services across media, productivity, AI, cloud storage, developer tools and design, including Apple Developer Program annual membership. VPN is a generic category; custom names, plans and local icons are supported.
 - 26 fiat currencies plus USDT, USDC, BTC, ETH and SOL. Automatic cached exchange rates, global fixed rates and a fixed acquisition rate per asset.
 - Chinese / English, system / light / dark appearance, configurable spending levels and optional launch at login.
 - Local JSON, backup before writes, selectable storage directory, import preview and full export including custom icons.

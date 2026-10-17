@@ -16,7 +16,7 @@ with tempfile.TemporaryDirectory(prefix='subbit-mcp-') as root:
  assert request(1,'initialize',{'protocolVersion':'2025-11-25','clientInfo':{'name':'smoke','version':'1'},'capabilities':{}})['protocolVersion']=='2025-11-25'
  p.stdin.write('{"jsonrpc":"2.0","method":"notifications/initialized"}\n');p.stdin.flush()
  assert len(request(2,'tools/list')['tools'])==5
- assert len(call(3,'get_catalog')['catalog']['services'])==36
+ assert len(call(3,'get_catalog')['catalog']['services'])==37
  assert call(4,'preview_import',{'records':[record]})['added']==1
  assert call(5,'list_subscriptions')['subscriptions']==[]
  assert call(6,'import_subscriptions',{'importId':'test-import','records':[record]})['added']==1

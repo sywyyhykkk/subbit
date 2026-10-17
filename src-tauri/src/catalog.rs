@@ -266,20 +266,7 @@ impl CatalogCache {
         }
         // A failed request is retried after 15 minutes; offline window opens stay instant.
         write_json(&check_path, &now, false)?;
-        let client = crate::network::client()?;
-        let response = client
-            .get(url)
-            .send()
-            .and_then(|r| r.error_for_status())
-            .map_err(|e| e.to_string())?;
-        let mut bytes = Vec::new();
-        response
-            .take(MAX_BYTES + 1)
-            .read_to_end(&mut bytes)
-            .map_err(|e| e.to_string())?;
-        if bytes.len() as u64 > MAX_BYTES {
-            return Err("Catalog exceeds 8 MB".into());
-        }
+        let bytes = crate::network::download(url, MAX_BYTES as usize)?.bytes;
         let catalog: Catalog = serde_json::from_slice(&bytes).map_err(|e| e.to_string())?;
         catalog.validate()?;
         let state = CatalogState {

@@ -550,7 +550,7 @@
       }
   }
   async function toggleOffline() {
-    if (updateState === "downloading") { error = tr("请等待应用更新完成", "Wait for the application update to finish"); return; }
+    if (["checking", "downloading"].includes(updateState)) { error = tr("请等待应用更新操作完成", "Wait for the update operation to finish"); return; }
     const enabled = !offline;
     if (enabled && !await confirm(tr(
       "开启后将停止联网更新汇率、服务目录、网站图标和应用版本。\n\n本地汇率可能已过时，换算结果可能与实时价格有差异；服务目录可能不包含最新服务、套餐和参考价。已保存的资产不受影响。\n\n你仍可在设置中填写固定汇率，或通过 Agent 使用 MCP 导入汇率和服务目录。",
@@ -1280,7 +1280,7 @@
     </div>
     <div class="dialog-content settings-content">
       {#if settingsTab === "general"}
-        <div class="switch-row"><span>{tr("离线模式", "Offline mode")}<small>{tr("禁止 Subbit 主动联网，立即生效", "Stop Subbit from connecting online; applies immediately")}</small></span><button role="switch" aria-checked={offline} disabled={busy || updateState === "downloading"} onclick={toggleOffline}>{offline ? tr("已开启", "On") : tr("已关闭", "Off")}</button></div>
+        <div class="switch-row"><span>{tr("离线模式", "Offline mode")}<small>{tr("禁止 Subbit 主动联网，立即生效", "Stop Subbit from connecting online; applies immediately")}</small></span><button role="switch" aria-checked={offline} disabled={busy || ["checking", "downloading"].includes(updateState)} onclick={toggleOffline}>{offline ? tr("已开启", "On") : tr("已关闭", "Off")}</button></div>
         <div class="form-grid">
           <label
             >{tr("语言", "Language")}<select bind:value={prefs.language}

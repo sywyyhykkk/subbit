@@ -31,18 +31,13 @@ pub fn refresh(force: bool) -> Result<Vec<String>> {
     if !fiat && !crypto {
         return Ok(vec![]);
     }
-    let client = crate::network::client()?;
     let mut updates = BTreeMap::new();
     let mut errors = vec![];
     if fiat {
         let result = (|| -> Result<()> {
             crate::network::require_online()?;
-            let rows: Vec<Value> = client
-                .get("https://api.frankfurter.dev/v2/rates?base=USD")
-                .send()
-                .and_then(|r| r.error_for_status())
-                .and_then(|r| r.json())
-                .map_err(|e| e.to_string())?;
+            let bytes = crate::network::download("https://api.frankfurter.dev/v2/rates?base=USD", 1_000_000)?.bytes;
+            let rows: Vec<Value> = serde_json::from_slice(&bytes).map_err(|e| e.to_string())?;
             for row in rows {
                 if let Some(code) = row["quote"].as_str() {
                     if CURRENCIES[..26].contains(&code) {
@@ -68,12 +63,8 @@ pub fn refresh(force: bool) -> Result<Vec<String>> {
     if crypto {
         let result = (|| -> Result<()> {
             crate::network::require_online()?;
-            let data: Value = client
-                .get("https://api.coinbase.com/v2/exchange-rates?currency=USD")
-                .send()
-                .and_then(|r| r.error_for_status())
-                .and_then(|r| r.json())
-                .map_err(|e| e.to_string())?;
+            let bytes = crate::network::download("https://api.coinbase.com/v2/exchange-rates?currency=USD", 1_000_000)?.bytes;
+            let data: Value = serde_json::from_slice(&bytes).map_err(|e| e.to_string())?;
             for code in &CURRENCIES[26..] {
                 if let Some(raw) = data["data"]["rates"][*code].as_str() {
                     let rate: Decimal = raw.parse().map_err(|_| "Invalid quote")?;

@@ -32,7 +32,7 @@ pub fn refresh(force: bool) -> Result<Vec<String>> {
     }
     let client = reqwest::blocking::Client::builder()
         .timeout(Duration::from_secs(15))
-        .user_agent("Subbit/0.1")
+        .user_agent(concat!("Subbit/", env!("CARGO_PKG_VERSION")))
         .build()
         .map_err(|e| e.to_string())?;
     let mut updates = BTreeMap::new();

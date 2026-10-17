@@ -14,7 +14,9 @@ with tempfile.TemporaryDirectory(prefix='subbit-mcp-') as root:
  def call(id,name,args=None):
   result=request(id,'tools/call',{'name':name,'arguments':args or {}});assert not result.get('isError'),result
   return json.loads(result['content'][0]['text'])
- assert request(1,'initialize',{'protocolVersion':'2025-11-25','clientInfo':{'name':'smoke','version':'1'},'capabilities':{}})['protocolVersion']=='2025-11-25'
+ initialized=request(1,'initialize',{'protocolVersion':'2025-11-25','clientInfo':{'name':'smoke','version':'1'},'capabilities':{}})
+ assert initialized['protocolVersion']=='2025-11-25'
+ assert initialized['serverInfo']['version']==json.loads((repo/'package.json').read_text(encoding='utf-8'))['version']
  p.stdin.write('{"jsonrpc":"2.0","method":"notifications/initialized"}\n');p.stdin.flush()
  assert len(request(2,'tools/list')['tools'])==5
  catalog=call(3,'get_catalog')['catalog']

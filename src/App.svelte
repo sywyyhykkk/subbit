@@ -56,6 +56,15 @@
         navigator.language.startsWith("en")),
   );
   const tr = (zh: string, english: string) => (en ? english : zh);
+  const labels = $derived({
+    addAsset: tr("新增资产", "Add asset"),
+    personalCost: tr("实际花销", "Personal cost"),
+    billedCost: tr("账单花销", "Billed cost"),
+    locateData: tr("定位已有数据", "Locate existing data"),
+    changeIcon: tr("更换图标", "Change icon"),
+    openApp: tr("打开 Subbit", "Open Subbit"),
+    ratesUpdated: tr("汇率已更新", "Exchange rates updated"),
+  });
   const entries = $derived.by(() => snap?.database.subscriptions ?? []);
   const filtered = $derived(
     entries.filter(
@@ -221,10 +230,10 @@
       await reload();
       if (warnings.length)
         notice = tr(
-          "汇率更新失败，继续使用已有缓存。",
-          "Rate update failed. Cached rates are still in use.",
+          "部分汇率更新失败，保留已有缓存。",
+          "Some exchange rates could not be updated. Cached rates were retained.",
         );
-      else if (force) notice = tr("汇率已更新", "Exchange rates updated");
+      else if (force) notice = labels.ratesUpdated;
     });
   }
   async function picker() {
@@ -536,7 +545,7 @@
       <div class="page-title"><h1>Subbit</h1><span>{tr("数字资产", "Digital assets")}</span>{#if snap?.level}<span class="level">{snap.level}</span>{/if}</div>
       <div class="header-actions">
         {#if !panel}<button class="icon-button" aria-label={tr("设置", "Settings")} title={tr("设置", "Settings")} onclick={settings}><Icon name="settings"/></button>{/if}
-        <button class="primary" onclick={picker}><Icon name="plus"/>{tr("新增资产", "Add asset")}</button>
+        <button class="primary" onclick={picker}><Icon name="plus"/>{labels.addAsset}</button>
       </div>
     </header>
     <section class="overview" aria-label={tr("成本总览", "Cost overview")}>
@@ -546,11 +555,11 @@
         </div>
       </div>
       <div class="summary-grid">
-        <div class="personal"><div class="card-label">{tr("实际花销", "Personal cost")}</div><div class="amount">{money(snap?.summary.actual)}<small>/ {unitLabel(period)}</small></div><div class="card-foot">{tr("报销后个人承担", "After reimbursement")}</div></div>
-        <div class="secondary-costs"><div class="bill"><div class="card-label">{tr("账单花销", "Billed cost")}</div><div class="secondary-amount">{money(snap?.summary.bill)}</div></div><div class="reimbursed"><div class="card-label">{tr("报销抵扣", "Reimbursed")}</div><div class="secondary-amount">{money(snap?.summary.reimbursed)}</div></div></div>
+        <div class="personal"><div class="card-label">{labels.personalCost}</div><div class="amount">{money(snap?.summary.actual)}<small>/ {unitLabel(period)}</small></div><div class="card-foot">{tr("报销后个人承担", "After reimbursement")}</div></div>
+        <div class="secondary-costs"><div class="bill"><div class="card-label">{labels.billedCost}</div><div class="secondary-amount">{money(snap?.summary.bill)}</div></div><div class="reimbursed"><div class="card-label">{tr("报销抵扣", "Reimbursed")}</div><div class="secondary-amount">{money(snap?.summary.reimbursed)}</div></div></div>
       </div>
     </section>
-    {#if snap?.summary.missingRates.length}<div class="banner warning">{tr("部分币种缺少汇率，总额暂不可用。", "Some exchange rates are missing.")}<button onclick={settings}>{tr("设置汇率", "Set rates")}</button></div>{/if}
+    {#if snap?.summary.missingRates.length}<div class="banner warning">{tr("部分币种缺少汇率，总额暂不可用。", "Some exchange rates are missing.")}<button onclick={settings}>{tr("设置", "Settings")}</button></div>{/if}
     {#if !isTauri()}<div class="banner">{tr("界面预览 · 本地数据功能请在桌面应用中使用", "Interface preview · Local data features require the desktop app")}</div>{/if}
     <section class="assets-section">
       <div class="list-toolbar">
@@ -586,11 +595,11 @@
                 )}
           </p>
           {#if entries.length}<button onclick={() => { category = "all"; filter = "all"; search = ""; }}>{tr("清除筛选", "Clear filters")}</button>
-          {:else}<button class="primary" onclick={picker}><Icon name="plus"/>{tr("添加资产", "Add an asset")}</button>{/if}
+          {:else}<button class="primary" onclick={picker}><Icon name="plus"/>{labels.addAsset}</button>{/if}
         </div>
       {:else}<div class="list-head">
-          <span>{tr("服务 / 套餐", "SERVICE / PLAN")}</span><span
-            >{tr("个人承担", "YOUR COST")} / {unitLabel(period)}</span
+          <span>{tr("服务 / 套餐", "Service / Plan")}</span><span
+            >{labels.personalCost} / {unitLabel(period)}</span
           >
         </div>
         <div class="asset-list">
@@ -625,7 +634,7 @@
                 ><span class="asset-detail"
                   >{#if !item.active}{tr(
                       "已停用",
-                      "Paused",
+                      "Inactive",
                     )}{:else if !cost?.current}{item.purchasedAt > today()
                       ? tr("尚未开始", "Not started")
                       : tr(
@@ -647,14 +656,14 @@
               <span class="asset-cost"
                 ><strong>{money(cost?.actual)}</strong><span
                   >{item.reimbursement !== "none"
-                    ? tr("含报销抵扣", "After reimbursement")
+                    ? tr("报销后个人承担", "After reimbursement")
                     : tr("均摊成本", "Average cost")}</span
                 ></span
               ><span class="chevron"><Icon name="chevron" size={16}/></span>
             </button>{/each}
         </div>{/if}
     </section>
-    <footer><span>{filtered.length} / {entries.length} {tr("项资产", "assets")}<span class="footer-separator">·</span>{tr("本地保存", "Saved locally")}</span>{#if panel}<button onclick={() => call("open_main")}>{tr("打开窗口", "Open window")}<Icon name="arrow" size={16}/></button>{:else}<span>{tr("当前成本折算，非扣款流水", "Amortized cost, not transactions")}</span>{/if}</footer>
+    <footer><span>{filtered.length} / {entries.length} {tr("项资产", "assets")}<span class="footer-separator">·</span>{tr("已保存到本地", "Saved locally")}</span>{#if panel}<button onclick={() => call("open_main")}>{labels.openApp}<Icon name="arrow" size={16}/></button>{:else}<span>{tr("当前成本折算，非扣款流水", "Amortized cost, not transactions")}</span>{/if}</footer>
   </main>
 </div>
 
@@ -669,7 +678,7 @@
 >
   {#if modal === "picker"}<div class="dialog-header">
       <div>
-        <h2>{tr("新增数字资产", "Add a digital asset")}</h2>
+        <h2>{labels.addAsset}</h2>
       </div>
       <button
         class="icon-button"
@@ -740,7 +749,7 @@
           <h2>
             {entries.some((s) => s.id === record.id)
               ? tr("编辑资产", "Edit asset")
-              : tr("添加资产", "Add asset")}
+              : labels.addAsset}
           </h2>
         </div>
         <button
@@ -769,9 +778,9 @@
             ><input
               type="file"
               accept="image/png,image/jpeg,image/webp"
-              aria-label={tr("上传图标", "Upload icon")}
+              aria-label={labels.changeIcon}
               onchange={(e) => uploadIcon(e.currentTarget.files?.[0])}
-            /><small>{tr("更换图标", "Change icon")}</small></label
+            /><small>{labels.changeIcon}</small></label
           ><label class="grow"
             >{tr("名称", "Name")}<input
               required
@@ -790,7 +799,7 @@
             ></label
           ><div class="plan-field">
             {#if selectedService}<label>
-              {tr("套餐 / 档位", "Plan")}
+              {tr("套餐", "Plan")}
               <select bind:value={planPresetId} onchange={() => applyPlan(selectedService?.plans.find((p) => p.id === planPresetId))}>
                 {#each selectedService.plans.filter((p) => !p.retired || p.id === planPresetId) as p}
                   <option value={p.id}>{p.name}{p.retired ? tr("（旧套餐）", " (legacy)") : ""}</option>
@@ -805,7 +814,7 @@
           </div>
         </div>
         <fieldset class="kind-choice">
-          <legend>{tr("购买方式", "Purchase type")}</legend><label
+          <legend>{tr("资产类型", "Asset type")}</legend><label
             class:active={record.kind === "recurring"}
             ><input
               type="radio"
@@ -815,7 +824,7 @@
                 record.kind = "recurring";
                 setKind();
               }}
-            /><span><Icon name="refresh" size={16}/>{tr("周期订阅", "Subscription")}</span></label
+            /><span><Icon name="refresh" size={16}/>{tr("订阅", "Subscription")}</span></label
           ><label class:active={record.kind === "lifetime"}
             ><input
               type="radio"
@@ -825,7 +834,7 @@
                 record.kind = "lifetime";
                 setKind();
               }}
-            /><span><Icon name="infinity" size={16}/>{tr("一次买断", "Lifetime purchase")}</span></label
+            /><span><Icon name="infinity" size={16}/>{tr("买断", "Lifetime")}</span></label
           >
         </fieldset>
         <div class="form-grid">
@@ -985,8 +994,8 @@
               oninput={(e) =>
                 (record.fixedUsdRate = e.currentTarget.value || null)}
               placeholder={tr(
-                "留空使用最新汇率",
-                "Leave blank for latest rates",
+                "留空使用全局固定汇率或缓存汇率",
+                "Leave blank for global fixed or cached rates",
               )}
             /></label
           ><label
@@ -995,7 +1004,7 @@
               maxlength="4000"
               bind:value={record.notes}></textarea></label
           ><label class="switch-row"
-            ><span>{tr("计入当前资产", "Active asset")}</span><input
+            ><span>{tr("计入成本统计", "Include in cost summary")}</span><input
               type="checkbox"
               role="switch"
               bind:checked={record.active}
@@ -1060,13 +1069,13 @@
               ><option value="dark">{tr("深色", "Dark")}</option></select
             ></label
           ><label
-            >{tr("默认币种", "Default currency")}<select
+            >{tr("默认显示币种", "Default display currency")}<select
               bind:value={prefs.currency}
               >{#each currencies.slice(0, 26) as c}<option>{c}</option
                 >{/each}</select
             ></label
           ><label
-            >{tr("默认周期", "Default period")}<select bind:value={prefs.period}
+            >{tr("默认统计周期", "Default summary period")}<select bind:value={prefs.period}
               >{#each ["hour", "month", "year"] as unit}<option value={unit}
                   >{unitLabel(unit)}</option
                 >{/each}</select
@@ -1099,8 +1108,8 @@
         >{#if prefs.showLevel}<label
             >{tr("等级依据", "Level basis")}<select
               bind:value={prefs.levelBasis}
-              ><option value="actual">{tr("实际花销", "Personal cost")}</option
-              ><option value="bill">{tr("账单花销", "Billed cost")}</option
+              ><option value="actual">{labels.personalCost}</option
+              ><option value="bill">{labels.billedCost}</option
               ></select
             ></label
           >{#each prefs.levels as level, i}<div class="level-rule">
@@ -1110,16 +1119,16 @@
               /><input
                 aria-label={tr("等级名称", "Level name")}
                 bind:value={level.name}
-              /><button onclick={() => prefs.levels.splice(i, 1)}><Icon name="close" size={16}/></button>
+              /><button aria-label={tr("删除等级", "Delete level")} onclick={() => prefs.levels.splice(i, 1)}><Icon name="close" size={16}/></button>
             </div>{/each}<button
             onclick={() => prefs.levels.push({ above: "100", name: "" })}
-            ><Icon name="plus" size={16}/>{tr("添加等级", "Add level")}</button
+            ><Icon name="plus" size={16}/>{tr("新增等级", "Add level")}</button
           >{/if}
         <div class="switch-row">
           <span
             >{tr("登录时启动", "Launch at login")}<small
               >{tr(
-                "启动后安静驻留菜单栏",
+                "启动后驻留菜单栏 / 系统托盘",
                 "Start quietly in the system tray",
               )}</small
             ></span
@@ -1134,7 +1143,7 @@
         </div>
         <div class="hint">
           {tr(
-            "关闭窗口后仍驻留菜单栏。退出请使用托盘菜单或下方按钮。",
+            "关闭窗口后仍驻留菜单栏 / 系统托盘。退出请使用托盘菜单或下方按钮。",
             "Closing the window keeps Subbit in the tray. Use the tray menu or the button below to quit.",
           )}
         </div>
@@ -1169,20 +1178,20 @@
               settingsRevision = snap!.database.revision;
               notice = warnings.length
                 ? tr(
-                    "部分更新失败，保留已有缓存",
-                    "Some rates failed; cache retained",
+                    "部分汇率更新失败，保留已有缓存。",
+                    "Some exchange rates could not be updated. Cached rates were retained.",
                   )
-                : tr("汇率已更新", "Rates updated");
-            })}><Icon name="refresh" size={16}/>{tr("立即更新", "Update now")}</button
+                : labels.ratesUpdated;
+            })}><Icon name="refresh" size={16}/>{tr("更新汇率", "Update exchange rates")}</button
         >
         <div class="rate-input">
           <select bind:value={rateCode}
             >{#each currencies as c}<option>{c}</option>{/each}</select
           ><input
-            aria-label={tr("固定美元汇率", "Fixed USD rate")}
-            placeholder="1 USD = 1"
+            aria-label={tr("固定汇率", "Fixed exchange rate")}
+            placeholder={`1 ${rateCode} = ? USD`}
             bind:value={rateValue}
-          /><button onclick={addRate}>{tr("固定", "Set")}</button>
+          /><button onclick={addRate}>{tr("设置固定汇率", "Set fixed rate")}</button>
         </div>
         <div class="rates-list">
           {#each currencies as c}{#if prefs.fixedRates[c] || snap?.database.rates[c]}<div
@@ -1190,7 +1199,7 @@
                 <strong>{c}</strong><span
                   >{prefs.fixedRates[c] ?? snap?.database.rates[c]?.usd} USD<small
                     >{prefs.fixedRates[c]
-                      ? tr("手动固定", "Fixed")
+                      ? tr("固定汇率", "Fixed exchange rate")
                       : snap?.database.rates[c]?.asOf.slice(0, 10)}</small
                   ></span
                 >{#if prefs.fixedRates[c]}<button
@@ -1217,7 +1226,7 @@
           <button disabled={busy} onclick={moveData}
             >{tr("更换存储文件夹", "Change folder")}</button
           ><button disabled={busy} onclick={locateData}
-            >{tr("定位已有数据", "Locate existing data")}</button
+            >{labels.locateData}</button
           >
         </div>
         <div class="divider"></div>
@@ -1251,8 +1260,8 @@
           ><span
             ><strong>{tr("启用本地 MCP", "Enable local MCP")}</strong><small
               >{tr(
-                "让 Agent 查询或导入你的订阅",
-                "Let your Agent read or import subscriptions",
+                "让 Agent 查询或导入你的资产",
+                "Let your Agent read or import assets",
               )}</small
             ></span
           ><input
@@ -1268,7 +1277,7 @@
           )}
         </p>
         <pre>{mcpConfig}</pre>
-        <button onclick={copyMcp}>{tr("复制连接配置", "Copy config")}</button>
+        <button onclick={copyMcp}>{tr("复制连接配置", "Copy connection config")}</button>
         <p class="hint">
           {tr(
             "可用工具：查询目录、列出资产、预览导入、批量导入、费用汇总。使用云端 Agent 时，工具返回的数据会交给该 Agent 处理。",
@@ -1292,12 +1301,12 @@
       </div>
     </div>{/if}
   {#if error}<div class="dialog-error" role="alert">
-      {error}<button onclick={() => (error = "")}><Icon name="close" size={16}/></button>
+      {error}<button aria-label={tr("关闭", "Close")} onclick={() => (error = "")}><Icon name="close" size={16}/></button>
     </div>{/if}
 </dialog>
 {#if error && !modal}<div class="toast error" role="alert">
     <span>{error}</span><button onclick={locateData}
-      >{tr("定位数据", "Locate data")}</button
+      >{labels.locateData}</button
     ><button aria-label={tr("关闭", "Close")} onclick={() => (error = "")}
       ><Icon name="close" size={16}/></button
     >

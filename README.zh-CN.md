@@ -4,6 +4,17 @@
 
 轻量的 macOS / Windows 个人数字资产订阅管理工具。Rust + Tauri 2 + Svelte 5，无需账号或自建服务器。
 
+## 下载与安装
+
+下载 [Subbit 0.0.1 正式版](https://github.com/sywyyhykkk/subbit/releases/tag/v0.0.1)：
+
+- [macOS 通用 DMG](https://github.com/sywyyhykkk/subbit/releases/download/v0.0.1/Subbit_0.0.1_macos-universal.dmg)：支持 macOS 12+、Apple Silicon 和 Intel。打开 DMG，将 Subbit 拖入 Applications。
+- [Windows x64 安装 EXE](https://github.com/sywyyhykkk/subbit/releases/download/v0.0.1/Subbit_0.0.1_windows-x64-setup.exe)：支持 Windows 10/11、Intel/AMD 64 位。运行安装程序，再从开始菜单启动。
+
+无需开发环境。Windows 缺少 WebView2 时会联网安装；请下载安装包，而不是 GitHub 自动生成的 Source code 源码压缩包。此版本尚无发布者签名及 Apple 公证，首次启动可能出现 Gatekeeper 或 SmartScreen 提示。安装条件和验证范围见 [发布说明](docs/releases/0.0.1.md)。
+
+## 功能
+
 - 菜单栏 / 系统托盘随手查看，独立窗口管理。
 - 按小时、月、年折算账单花销和报销后的实际花销。
 - 到期日期可选，按日历周期自动推进；关闭续期后，到期次日退出当前费用统计。

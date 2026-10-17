@@ -100,7 +100,7 @@ pub fn run() -> Result<()> {
                         _ => "2025-11-25",
                     };
                     Ok(
-                        json!({"protocolVersion":version,"capabilities":{"tools":{"listChanged":false}},"serverInfo":{"name":"subbit","version":"0.1.0"},"instructions":"Local subscription tracker. Enable MCP in app settings. Preview imports before committing; do not invent prices, currency or billing periods."}),
+                        json!({"protocolVersion":version,"capabilities":{"tools":{"listChanged":false}},"serverInfo":{"name":"subbit","version":env!("CARGO_PKG_VERSION")},"instructions":"Local subscription tracker. Enable MCP in app settings. Preview imports before committing; do not invent prices, currency or billing periods."}),
                     )
                 }
                 "ping" => Ok(json!({})),

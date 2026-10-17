@@ -1,6 +1,6 @@
 {
   "name": "subbit",
-  "version": "0.1.0",
+  "version": "0.0.1",
   "description": "A lightweight, local-first subscription companion for macOS and Windows",
   "scripts": {
     "dev": "vite",

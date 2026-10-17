@@ -225,10 +225,10 @@ pub fn run() {
             quit
         ])
         .setup(|app| {
-            let open = MenuItem::with_id(app, "open", "打开 Subbit / Open", true, None::<&str>)?;
+            let open = MenuItem::with_id(app, "open", "打开 Subbit / Open Subbit", true, None::<&str>)?;
             let settings =
                 MenuItem::with_id(app, "settings", "设置 / Settings", true, None::<&str>)?;
-            let quit = MenuItem::with_id(app, "quit", "退出 / Quit", true, None::<&str>)?;
+            let quit = MenuItem::with_id(app, "quit", "退出 Subbit / Quit Subbit", true, None::<&str>)?;
             let menu = Menu::with_items(app, &[&open, &settings, &quit])?;
             TrayIconBuilder::with_id("subbit")
                 .icon(tauri::image::Image::from_bytes(include_bytes!(

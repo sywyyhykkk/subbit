@@ -1,0 +1,38 @@
+{
+  "id": "iqiyi",
+  "name": "爱奇艺",
+  "category": "media",
+  "aliases": [
+    "iQIYI",
+    "IQIYI",
+    "爱奇艺VIP"
+  ],
+  "icon": "/catalog/icons/iqiyi.png",
+  "iconSource": "https://www.iqiyi.com/favicon.ico",
+  "iconLicense": "Brand asset; respective owner retains rights",
+  "source": "https://www.iqiyi.com/vip",
+  "reviewedAt": "2026-10-18",
+  "regions": [
+    "Mainland China iQIYI VIP plans; international iQIYI plans are separate"
+  ],
+  "plans": [
+    {
+      "id": "gold",
+      "name": "黄金VIP",
+      "kind": "recurring",
+      "retired": false
+    },
+    {
+      "id": "platinum",
+      "name": "白金VIP",
+      "kind": "recurring",
+      "retired": false
+    },
+    {
+      "id": "diamond",
+      "name": "星钻VIP",
+      "kind": "recurring",
+      "retired": false
+    }
+  ]
+}

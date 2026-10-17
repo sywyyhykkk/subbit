@@ -130,10 +130,11 @@
     ),
   );
   const customServices = $derived(
-    entries.filter(
-      (s, i, all) =>
-        !s.serviceId && all.findIndex((x) => x.name === s.name) === i,
-    ),
+    entries.filter((s) =>
+      !s.serviceId &&
+      (pickerCategory === "all" || s.category === pickerCategory) &&
+      s.name.toLowerCase().includes(pickerSearch.toLowerCase()),
+    ).filter((s, i, all) => all.findIndex((x) => x.name === s.name) === i),
   );
   const unitLabel = (unit: string) =>
     ({

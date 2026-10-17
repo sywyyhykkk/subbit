@@ -24,6 +24,25 @@ pub(crate) fn init_tls() {
     let _ = rustls::crypto::ring::default_provider().install_default();
 }
 #[tauri::command]
+fn data_file_info() -> Result<Value> {
+    let path = Store::system()?.location()?;
+    let size = |path: &std::path::Path| -> Result<Option<u64>> {
+        match std::fs::metadata(path) {
+            Ok(metadata) => Ok(Some(metadata.len())),
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(None),
+            Err(e) => Err(e.to_string()),
+        }
+    };
+    Ok(serde_json::json!({"data":size(&path)?,"backup":size(&path.with_extension("json.bak"))?}))
+}
+#[tauri::command]
+fn reveal_data(app: tauri::AppHandle) -> Result<()> {
+    use tauri_plugin_opener::OpenerExt;
+    let path = Store::system()?.location()?;
+    if path.exists() { app.opener().reveal_item_in_dir(path).map_err(|e| e.to_string()) }
+    else { app.opener().open_path(path.parent().ok_or("Invalid data path")?.to_string_lossy(), None::<&str>).map_err(|e| e.to_string()) }
+}
+#[tauri::command]
 async fn website_icon(domain: String, icon_url: Option<String>) -> Result<Value> {
     tauri::async_runtime::spawn_blocking(move || favicon::fetch(&domain, icon_url.as_deref()))
         .await.map_err(|e| e.to_string())?
@@ -260,6 +279,8 @@ pub fn run() {
                 .build(),
         )
         .invoke_handler(tauri::generate_handler![
+            data_file_info,
+            reveal_data,
             website_icon,
             offline_mode,
             set_offline_mode,

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import Icon from "./Icon.svelte";
+  import { localTimestamp, bytesLabel } from "./display";
   import DatePicker from "./DatePicker.svelte";
   import { nextCycle } from "./dates";
   import { createReloadQueue } from "./reload";
@@ -57,6 +58,22 @@
     search = $state(""),
     filter = $state("all");
   let sortBy = $state("added"), sortOrder = $state("desc"), paymentFilter = $state("all");
+  const viewKey = "subbit.asset-view";
+  function restoreView() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(viewKey) ?? "{}");
+      sortBy = saved.sortBy === "price" ? "price" : "added";
+      sortOrder = saved.sortOrder === "asc" ? "asc" : "desc";
+      paymentFilter = typeof saved.payment === "string" ? saved.payment : "all";
+      category = typeof saved.category === "string" ? saved.category : "all";
+      filter = ["recurring", "lifetime"].includes(saved.kind) ? saved.kind : "all";
+    } catch { /* Invalid saved preferences do not prevent opening assets. */ }
+  }
+  restoreView();
+  $effect(() => {
+    const saved = { sortBy, sortOrder, payment: paymentFilter, category, kind: filter };
+    try { localStorage.setItem(viewKey, JSON.stringify(saved)); } catch { /* Storage can be unavailable in browser previews. */ }
+  });
   let offline = $state(false);
   let version = $state(appInfo.version);
   let update: Update | null = $state(null);
@@ -80,6 +97,8 @@
     rateCode = $state("USD"),
     rateValue = $state("");
   let preview: Database | null = $state(null);
+  let fileInfo: {data: number | null; backup: number | null} | null = $state(null);
+  let fileInfoError = $state(false);
   let inputDialog: HTMLDialogElement;
   const activeLanguage = $derived.by(() => modal === "settings" ? prefs.language : snap?.database.settings.language ?? "system");
   const en = $derived(activeLanguage === "en" || (activeLanguage === "system" && !navigator.language.toLowerCase().startsWith("zh")));
@@ -91,7 +110,7 @@
     addAsset: tr("新增资产", "Add asset"),
     personalCost: tr("实际花销", "Personal cost"),
     billedCost: tr("账单花销", "Billed cost"),
-    locateData: tr("定位已有数据", "Locate existing data"),
+    locateData: tr("选择已有数据文件", "Choose existing data file"),
     changeIcon: tr("更换图标", "Change icon"),
     openApp: tr("打开 Subbit", "Open Subbit"),
     ratesUpdated: tr("汇率已更新", "Exchange rates updated"),
@@ -518,6 +537,8 @@
     if (prefs.levels.length === 1 && prefs.levels[0].above === "100" && prefs.levels[0].name === "数字土豪") prefs.levels = defaultLevels(en);
     modal = "settings";
     settingsTab = "general";
+    fileInfo = null; fileInfoError = false;
+    if (isTauri()) try { fileInfo = await call("data_file_info"); } catch { fileInfoError = true; }
     if (isTauri())
       try {
         autoStart = await isEnabled();
@@ -624,6 +645,7 @@
     await action(async () => {
       const path = await open({
         multiple: false,
+        defaultPath: snap?.path,
         filters: [{ name: "JSON", extensions: ["json"] }],
       });
       if (path) {
@@ -695,6 +717,9 @@
   onMount(() => {
     let cleanup: (() => void)[] = [];
     let disposed = false;
+    const storageChanged = (event: StorageEvent) => { if (event.key === viewKey) restoreView(); };
+    window.addEventListener("storage", storageChanged);
+    cleanup.push(() => window.removeEventListener("storage", storageChanged));
     const appearance = window.matchMedia("(prefers-color-scheme: dark)");
     const changedAppearance = () => systemDark = appearance.matches;
     appearance.addEventListener("change", changedAppearance);
@@ -819,12 +844,12 @@
               >
               <span class="asset-info"
                 ><strong
-                  >{item.name}<span class="tag"
+                  ><span class="asset-name" title={item.name}>{item.name}</span><span class="tag"
                     >{item.kind === "lifetime"
                       ? tr("买断", "Lifetime")
                       : categoryName(item.category)}</span
                   ></strong
-                ><span class="asset-meta"
+                ><span class="asset-meta" title={`${item.category === "domain" ? item.registrar ?? "" : item.plan || tr("自定义套餐", "Custom plan")} · ${item.currency} ${item.amount}${item.kind === "recurring" ? ` / ${item.cycleCount} ${unitLabel(item.cycleUnit)}` : ""}`}
                   >{item.category === "domain" ? (item.registrar ? `${item.registrar} · ` : "") : `${item.plan || tr("自定义套餐", "Custom plan")} · `}{item.currency}
                   {item.amount}{item.kind === "recurring"
                     ? ` / ${item.cycleCount > 1 ? item.cycleCount : ""}${unitLabel(item.cycleUnit)}`
@@ -852,7 +877,7 @@
                 ></span
               >
               <span class="asset-cost"
-                ><strong>{money(cost?.actual)}</strong></span
+                ><strong>{money(cost?.actual)}</strong>{#if item.reimbursement === "full" || (item.reimbursement === "percent" && Number(item.reimbursementValue) === 100) || (item.reimbursement === "fixed" && Number(item.amount) > 0 && Number(item.reimbursementValue) === Number(item.amount))}<small>{tr("全额报销", "Fully reimbursed")}</small>{:else if ["fixed", "percent"].includes(item.reimbursement) && Number(item.reimbursementValue) > 0}<small>{tr("部分报销", "Partly reimbursed")}</small>{/if}</span
               ><span class="chevron"><Icon name="chevron" size={16}/></span>
             </button>{/each}
         </div>{/if}
@@ -1356,7 +1381,7 @@
           )}
         </p>
         <button
-          disabled={busy}
+          disabled={busy || offline}
           onclick={() =>
             action(async () => {
               const warnings = await call<string[]>("refresh_rates", {
@@ -1381,6 +1406,7 @@
             bind:value={rateValue}
           /><button onclick={addRate}>{tr("设置固定汇率", "Set fixed rate")}</button>
         </div>
+        <p class="hint">{tr("缺失的法币汇率使用安装包内置快照（Frankfurter，2026-10-16 / 17）；已有缓存与固定汇率优先。", "Missing fiat rates use the bundled Frankfurter snapshot (2026-10-16 / 17); cached and fixed rates take priority.")}</p>
         <div class="rates-list">
           {#each currencies as c}{#if prefs.fixedRates[c] || snap?.database.rates[c]}<div
               >
@@ -1388,7 +1414,7 @@
                   >{prefs.fixedRates[c] ?? snap?.database.rates[c]?.usd} USD<small
                     >{prefs.fixedRates[c]
                       ? tr("固定汇率", "Fixed exchange rate")
-                      : snap?.database.rates[c]?.asOf.slice(0, 10)}</small
+                      : localTimestamp(snap?.database.rates[c]?.asOf)}</small
                   ></span
                 >{#if prefs.fixedRates[c]}<button
                     aria-label={tr("移除固定汇率", "Remove fixed rate")}
@@ -1407,7 +1433,9 @@
             >{snap?.path}</code
           >
         </div>
+        <p class="file-sizes">{#if fileInfo}{tr("数据文件", "Data file")} {fileInfo.data == null ? tr("尚未创建", "Not created") : bytesLabel(fileInfo.data)} · {tr("备份", "Backup")} {fileInfo.backup == null ? tr("尚无备份", "No backup yet") : bytesLabel(fileInfo.backup)} · {tr("合计", "Total")} {bytesLabel((fileInfo.data ?? 0) + (fileInfo.backup ?? 0))}{:else}{fileInfoError ? tr("无法读取文件大小", "File sizes unavailable") : "—"}{/if}</p>
         <div class="button-row">
+          <button disabled={busy} onclick={() => action(async () => { await call("reveal_data"); })}>{tr("打开所在文件夹", "Show in folder")}</button>
           <button disabled={busy} onclick={moveData}
             >{tr("更换存储文件夹", "Change folder")}</button
           ><button disabled={busy} onclick={locateData}
@@ -1442,8 +1470,8 @@
             >
           </div>{/if}
         <h3>{tr("服务目录", "Service catalog")}</h3>
-        <p class="hint">{services.length} {tr("项服务", "services")} · {categories.length} {tr("个分类", "categories")} · {directory.updatedAt ? new Date(directory.updatedAt * 1000).toLocaleDateString(en ? "en-US" : "zh-CN") : tr("内置目录", "Built-in catalog")}</p>
-        <button disabled={catalogBusy} onclick={() => refreshDirectory(true)}><Icon name="refresh" size={16}/>{catalogBusy ? tr("正在更新…", "Updating…") : tr("更新目录", "Update catalog")}</button>
+        <p class="hint">{services.length} {tr("项服务", "services")} · {categories.length} {tr("个分类", "categories")} · {directory.updatedAt ? localTimestamp(directory.updatedAt) : tr("内置目录", "Built-in catalog")}</p>
+        <button disabled={catalogBusy || offline} onclick={() => refreshDirectory(true)}><Icon name="refresh" size={16}/>{catalogBusy ? tr("正在更新…", "Updating…") : tr("更新目录", "Update catalog")}</button>
         {#if catalogError}<p class="hint" role="status">{tr("更新失败，继续使用本地目录", "Update failed. Using the local catalog.")}</p>{/if}
       {:else if settingsTab === "about"}<div class="about-app">
         <img class="app-icon" src={dark ? appDark : appLight} alt="Subbit"/>

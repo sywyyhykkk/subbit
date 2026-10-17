@@ -8,31 +8,68 @@
   "iconLicense": "CC0-1.0",
   "source": "https://www.sketch.com/pricing/",
   "reviewedAt": "2026-10-16",
-  "regions": ["Availability and plan names vary by region"],
+  "regions": [
+    "Availability and plan names vary by region"
+  ],
   "plans": [
     {
       "id": "1",
       "name": "Standard",
       "kind": "recurring",
-      "retired": false
+      "retired": false,
+      "prices": [
+        {
+          "amountUsd": "144.00",
+          "cycleUnit": "year"
+        }
+      ],
+      "priceSource": "https://www.sketch.com/pricing/",
+      "priceReviewedAt": "2026-10-17",
+      "priceBasis": "per-seat"
     },
     {
       "id": "2",
       "name": "Professional",
       "kind": "recurring",
-      "retired": false
+      "retired": false,
+      "prices": [
+        {
+          "amountUsd": "288.00",
+          "cycleUnit": "year"
+        }
+      ],
+      "priceSource": "https://www.sketch.com/pricing/",
+      "priceReviewedAt": "2026-10-17",
+      "priceBasis": "per-seat"
     },
     {
       "id": "3",
       "name": "Enterprise",
       "kind": "recurring",
-      "retired": false
+      "retired": false,
+      "prices": [
+        {
+          "amountUsd": "528.00",
+          "cycleUnit": "year"
+        }
+      ],
+      "priceSource": "https://www.sketch.com/pricing/",
+      "priceReviewedAt": "2026-10-17",
+      "priceBasis": "per-seat"
     },
     {
       "id": "4",
       "name": "Mac-only license",
       "kind": "lifetime",
-      "retired": false
+      "retired": false,
+      "prices": [
+        {
+          "amountUsd": "120.00"
+        }
+      ],
+      "priceSource": "https://www.sketch.com/pricing/",
+      "priceReviewedAt": "2026-10-17",
+      "priceBasis": "per-seat"
     }
   ]
 }

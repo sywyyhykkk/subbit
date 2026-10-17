@@ -8,7 +8,8 @@
     "check": "svelte-check --tsconfig ./tsconfig.json",
     "tauri": "tauri",
     "test": "cargo test --manifest-path src-tauri/Cargo.toml",
-    "catalog:check": "node scripts/check-catalog.mjs"
+    "catalog:check": "node scripts/check-catalog.mjs",
+    "test:pricing": "node --test scripts/pricing.test.mjs"
   },
   "keywords": [],
   "author": "sywyyhykkk",

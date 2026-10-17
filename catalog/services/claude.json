@@ -7,38 +7,100 @@
   "iconSource": "https://simpleicons.org/",
   "iconLicense": "CC0-1.0",
   "source": "https://claude.com/pricing",
-  "reviewedAt": "2026-10-16",
-  "regions": ["Availability and plan names vary by region"],
+  "reviewedAt": "2026-10-17",
+  "regions": [
+    "Availability and plan names vary by region"
+  ],
   "plans": [
     {
       "id": "1",
       "name": "Pro",
       "kind": "recurring",
-      "retired": false
+      "retired": false,
+      "prices": [
+        {
+          "amountUsd": "20.00",
+          "cycleUnit": "month"
+        },
+        {
+          "amountUsd": "200.00",
+          "cycleUnit": "year"
+        }
+      ],
+      "priceSource": "https://claude.com/pricing",
+      "priceReviewedAt": "2026-10-17"
     },
     {
       "id": "2",
       "name": "Max 5x",
       "kind": "recurring",
-      "retired": false
+      "retired": false,
+      "prices": [
+        {
+          "amountUsd": "100.00",
+          "cycleUnit": "month"
+        }
+      ],
+      "priceSource": "https://claude.com/pricing",
+      "priceReviewedAt": "2026-10-17"
     },
     {
       "id": "3",
       "name": "Max 20x",
       "kind": "recurring",
-      "retired": false
+      "retired": false,
+      "prices": [
+        {
+          "amountUsd": "200.00",
+          "cycleUnit": "month"
+        }
+      ],
+      "priceSource": "https://claude.com/pricing",
+      "priceReviewedAt": "2026-10-17"
     },
     {
       "id": "4",
       "name": "Team",
       "kind": "recurring",
-      "retired": false
+      "retired": false,
+      "prices": [
+        {
+          "amountUsd": "25.00",
+          "cycleUnit": "month"
+        },
+        {
+          "amountUsd": "240.00",
+          "cycleUnit": "year"
+        }
+      ],
+      "priceSource": "https://claude.com/pricing",
+      "priceReviewedAt": "2026-10-17",
+      "priceBasis": "per-seat"
     },
     {
       "id": "5",
       "name": "Enterprise",
       "kind": "recurring",
       "retired": false
+    },
+    {
+      "id": "team-premium",
+      "name": "Team Premium",
+      "kind": "recurring",
+      "retired": false,
+      "prices": [
+        {
+          "amountUsd": "125.00",
+          "cycleUnit": "month"
+        },
+        {
+          "amountUsd": "1200.00",
+          "cycleUnit": "year"
+        }
+      ],
+      "priceSource": "https://claude.com/pricing",
+      "priceReviewedAt": "2026-10-17",
+      "priceBasis": "per-seat"
     }
   ]
 }

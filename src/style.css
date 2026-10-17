@@ -177,6 +177,8 @@ dialog > form { display: flex; flex-direction: column; min-height: 0; overflow: 
 .form-body { display: flex; flex-direction: column; gap: 18px; }
 label { display: flex; flex-direction: column; gap: 8px; font-size: 13px; line-height: 1.5; }
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.plan-field, .price-hint { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.price-hint button, .price-hint a { align-self: flex-start; }
 .identity { display: flex; align-items: center; gap: 18px; }
 .identity .grow { flex: 1; min-width: 0; }
 .upload-icon { align-items: center; position: relative; cursor: pointer; }

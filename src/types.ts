@@ -72,11 +72,22 @@ export interface Service {
   aliases: string[];
   icon: string;
   source: string;
-  plans: {
-    id: string;
-    name: string;
-    kind: "recurring" | "lifetime";
-    cycleUnit?: "day" | "week" | "month" | "year";
-    retired: boolean;
-  }[];
+  reviewedAt: string;
+  plans: Plan[];
+}
+export interface PlanPrice {
+  amountUsd: string;
+  cycleUnit?: "day" | "week" | "month" | "year";
+  cycleCount?: number;
+}
+export interface Plan {
+  id: string;
+  name: string;
+  kind: "recurring" | "lifetime";
+  cycleUnit?: "day" | "week" | "month" | "year";
+  retired: boolean;
+  prices?: PlanPrice[];
+  priceSource?: string;
+  priceReviewedAt?: string;
+  priceBasis?: "per-seat";
 }

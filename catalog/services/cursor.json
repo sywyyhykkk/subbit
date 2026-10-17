@@ -7,26 +7,66 @@
   "iconSource": "https://simpleicons.org/",
   "iconLicense": "CC0-1.0",
   "source": "https://cursor.com/pricing",
-  "reviewedAt": "2026-10-16",
-  "regions": ["Availability and plan names vary by region"],
+  "reviewedAt": "2026-10-17",
+  "regions": [
+    "Availability and plan names vary by region"
+  ],
   "plans": [
     {
-      "id": "1",
-      "name": "Pro",
+      "id": "plus",
+      "name": "Plus",
       "kind": "recurring",
-      "retired": false
+      "retired": false,
+      "prices": [
+        {
+          "amountUsd": "8.00",
+          "cycleUnit": "month"
+        }
+      ],
+      "priceSource": "https://cursor.com/pricing",
+      "priceReviewedAt": "2026-10-17"
     },
     {
-      "id": "2",
-      "name": "Pro+",
+      "id": "premium",
+      "name": "Premium",
       "kind": "recurring",
-      "retired": false
+      "retired": false,
+      "prices": [
+        {
+          "amountUsd": "30.00",
+          "cycleUnit": "month"
+        }
+      ],
+      "priceSource": "https://cursor.com/pricing",
+      "priceReviewedAt": "2026-10-17"
+    },
+    {
+      "id": "super",
+      "name": "Super",
+      "kind": "recurring",
+      "retired": false,
+      "prices": [
+        {
+          "amountUsd": "100.00",
+          "cycleUnit": "month"
+        }
+      ],
+      "priceSource": "https://cursor.com/pricing",
+      "priceReviewedAt": "2026-10-17"
     },
     {
       "id": "3",
       "name": "Ultra",
       "kind": "recurring",
-      "retired": false
+      "retired": false,
+      "prices": [
+        {
+          "amountUsd": "200.00",
+          "cycleUnit": "month"
+        }
+      ],
+      "priceSource": "https://cursor.com/pricing",
+      "priceReviewedAt": "2026-10-17"
     },
     {
       "id": "4",
@@ -39,6 +79,18 @@
       "name": "Enterprise",
       "kind": "recurring",
       "retired": false
+    },
+    {
+      "id": "1",
+      "name": "Pro",
+      "kind": "recurring",
+      "retired": true
+    },
+    {
+      "id": "2",
+      "name": "Pro+",
+      "kind": "recurring",
+      "retired": true
     }
   ]
 }

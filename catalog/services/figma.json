@@ -7,26 +7,145 @@
   "iconSource": "https://simpleicons.org/",
   "iconLicense": "CC0-1.0",
   "source": "https://www.figma.com/pricing/",
-  "reviewedAt": "2026-10-16",
-  "regions": ["Availability and plan names vary by region"],
+  "reviewedAt": "2026-10-17",
+  "regions": [
+    "Availability and plan names vary by region"
+  ],
   "plans": [
     {
       "id": "1",
-      "name": "Professional",
+      "name": "Professional — Full seat",
       "kind": "recurring",
-      "retired": false
+      "retired": false,
+      "prices": [
+        {
+          "amountUsd": "192.00",
+          "cycleUnit": "year"
+        }
+      ],
+      "priceSource": "https://www.figma.com/pricing/",
+      "priceReviewedAt": "2026-10-17",
+      "priceBasis": "per-seat"
     },
     {
       "id": "2",
-      "name": "Organization",
+      "name": "Organization — Full seat",
       "kind": "recurring",
-      "retired": false
+      "retired": false,
+      "prices": [
+        {
+          "amountUsd": "660.00",
+          "cycleUnit": "year"
+        }
+      ],
+      "priceSource": "https://www.figma.com/pricing/",
+      "priceReviewedAt": "2026-10-17",
+      "priceBasis": "per-seat"
     },
     {
       "id": "3",
-      "name": "Enterprise",
+      "name": "Enterprise — Full seat",
       "kind": "recurring",
-      "retired": false
+      "retired": false,
+      "prices": [
+        {
+          "amountUsd": "1080.00",
+          "cycleUnit": "year"
+        }
+      ],
+      "priceSource": "https://www.figma.com/pricing/",
+      "priceReviewedAt": "2026-10-17",
+      "priceBasis": "per-seat"
+    },
+    {
+      "id": "professional-dev",
+      "name": "Professional — Dev seat",
+      "kind": "recurring",
+      "retired": false,
+      "prices": [
+        {
+          "amountUsd": "144.00",
+          "cycleUnit": "year"
+        }
+      ],
+      "priceSource": "https://www.figma.com/pricing/",
+      "priceReviewedAt": "2026-10-17",
+      "priceBasis": "per-seat"
+    },
+    {
+      "id": "professional-collab",
+      "name": "Professional — Collab seat",
+      "kind": "recurring",
+      "retired": false,
+      "prices": [
+        {
+          "amountUsd": "36.00",
+          "cycleUnit": "year"
+        }
+      ],
+      "priceSource": "https://www.figma.com/pricing/",
+      "priceReviewedAt": "2026-10-17",
+      "priceBasis": "per-seat"
+    },
+    {
+      "id": "organization-dev",
+      "name": "Organization — Dev seat",
+      "kind": "recurring",
+      "retired": false,
+      "prices": [
+        {
+          "amountUsd": "300.00",
+          "cycleUnit": "year"
+        }
+      ],
+      "priceSource": "https://www.figma.com/pricing/",
+      "priceReviewedAt": "2026-10-17",
+      "priceBasis": "per-seat"
+    },
+    {
+      "id": "organization-collab",
+      "name": "Organization — Collab seat",
+      "kind": "recurring",
+      "retired": false,
+      "prices": [
+        {
+          "amountUsd": "60.00",
+          "cycleUnit": "year"
+        }
+      ],
+      "priceSource": "https://www.figma.com/pricing/",
+      "priceReviewedAt": "2026-10-17",
+      "priceBasis": "per-seat"
+    },
+    {
+      "id": "enterprise-dev",
+      "name": "Enterprise — Dev seat",
+      "kind": "recurring",
+      "retired": false,
+      "prices": [
+        {
+          "amountUsd": "420.00",
+          "cycleUnit": "year"
+        }
+      ],
+      "priceSource": "https://www.figma.com/pricing/",
+      "priceReviewedAt": "2026-10-17",
+      "priceBasis": "per-seat"
+    },
+    {
+      "id": "enterprise-collab",
+      "name": "Enterprise — Collab seat",
+      "kind": "recurring",
+      "retired": false,
+      "prices": [
+        {
+          "amountUsd": "60.00",
+          "cycleUnit": "year"
+        }
+      ],
+      "priceSource": "https://www.figma.com/pricing/",
+      "priceReviewedAt": "2026-10-17",
+      "priceBasis": "per-seat"
     }
   ]
 }

@@ -2,41 +2,122 @@
   "id": "chatgpt",
   "name": "ChatGPT",
   "category": "ai",
-  "aliases": ["OpenAI"],
+  "aliases": [
+    "OpenAI"
+  ],
   "icon": "/catalog/icons/chatgpt.svg",
   "iconSource": "https://github.com/simple-icons/simple-icons/blob/13.21.0/icons/openai.svg",
   "iconLicense": "CC0-1.0",
   "source": "https://chatgpt.com/pricing/",
-  "reviewedAt": "2026-10-16",
-  "regions": ["Availability and plan names vary by region"],
+  "reviewedAt": "2026-10-17",
+  "regions": [
+    "Availability and plan names vary by region"
+  ],
   "plans": [
     {
       "id": "1",
       "name": "Go",
       "kind": "recurring",
-      "retired": false
+      "retired": false,
+      "prices": [
+        {
+          "amountUsd": "8.00",
+          "cycleUnit": "month"
+        }
+      ],
+      "priceSource": "https://learn.chatgpt.com/docs/pricing",
+      "priceReviewedAt": "2026-10-17"
     },
     {
       "id": "2",
       "name": "Plus",
       "kind": "recurring",
-      "retired": false
+      "retired": false,
+      "prices": [
+        {
+          "amountUsd": "20.00",
+          "cycleUnit": "month"
+        }
+      ],
+      "priceSource": "https://learn.chatgpt.com/docs/pricing",
+      "priceReviewedAt": "2026-10-17"
+    },
+    {
+      "id": "pro-100",
+      "name": "Pro 100",
+      "kind": "recurring",
+      "retired": false,
+      "prices": [
+        {
+          "amountUsd": "100.00",
+          "cycleUnit": "month"
+        }
+      ],
+      "priceSource": "https://learn.chatgpt.com/docs/pricing",
+      "priceReviewedAt": "2026-10-17"
+    },
+    {
+      "id": "pro-200",
+      "name": "Pro 200",
+      "kind": "recurring",
+      "retired": false,
+      "prices": [
+        {
+          "amountUsd": "200.00",
+          "cycleUnit": "month"
+        }
+      ],
+      "priceSource": "https://learn.chatgpt.com/docs/pricing",
+      "priceReviewedAt": "2026-10-17"
+    },
+    {
+      "id": "pro-500",
+      "name": "Pro 500",
+      "kind": "recurring",
+      "retired": false,
+      "prices": [
+        {
+          "amountUsd": "500.00",
+          "cycleUnit": "month"
+        }
+      ],
+      "priceSource": "https://learn.chatgpt.com/docs/pricing",
+      "priceReviewedAt": "2026-10-17"
     },
     {
       "id": "3",
       "name": "Pro",
       "kind": "recurring",
-      "retired": false
+      "retired": true
     },
     {
       "id": "4",
       "name": "Business",
       "kind": "recurring",
-      "retired": false
+      "retired": false,
+      "prices": [
+        {
+          "amountUsd": "25.00",
+          "cycleUnit": "month"
+        },
+        {
+          "amountUsd": "240.00",
+          "cycleUnit": "year"
+        }
+      ],
+      "priceSource": "https://learn.chatgpt.com/docs/pricing",
+      "priceReviewedAt": "2026-10-17",
+      "priceBasis": "per-seat"
     },
     {
       "id": "5",
       "name": "Enterprise",
+      "kind": "recurring",
+      "retired": false
+    },
+    {
+      "id": "edu",
+      "name": "Edu",
       "kind": "recurring",
       "retired": false
     }

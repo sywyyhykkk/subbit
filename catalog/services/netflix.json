@@ -8,25 +8,51 @@
   "iconLicense": "CC0-1.0",
   "source": "https://help.netflix.com/en/node/24926",
   "reviewedAt": "2026-10-16",
-  "regions": ["Availability and plan names vary by region"],
+  "regions": [
+    "Availability and plan names vary by region"
+  ],
   "plans": [
     {
       "id": "1",
       "name": "Standard with ads",
       "kind": "recurring",
-      "retired": false
+      "retired": false,
+      "prices": [
+        {
+          "amountUsd": "8.99",
+          "cycleUnit": "month"
+        }
+      ],
+      "priceSource": "https://help.netflix.com/en/node/24926",
+      "priceReviewedAt": "2026-10-17"
     },
     {
       "id": "2",
       "name": "Standard",
       "kind": "recurring",
-      "retired": false
+      "retired": false,
+      "prices": [
+        {
+          "amountUsd": "19.99",
+          "cycleUnit": "month"
+        }
+      ],
+      "priceSource": "https://help.netflix.com/en/node/24926",
+      "priceReviewedAt": "2026-10-17"
     },
     {
       "id": "3",
       "name": "Premium",
       "kind": "recurring",
-      "retired": false
+      "retired": false,
+      "prices": [
+        {
+          "amountUsd": "26.99",
+          "cycleUnit": "month"
+        }
+      ],
+      "priceSource": "https://help.netflix.com/en/node/24926",
+      "priceReviewedAt": "2026-10-17"
     }
   ]
 }

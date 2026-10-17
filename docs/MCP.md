@@ -17,7 +17,7 @@ On Windows use the installed `subbit.exe` path. MCP uses stdio JSON-RPC and the 
 
 | Tool | Purpose |
 | --- | --- |
-| `get_catalog` | Categories, services, plans, currencies and full record schema |
+| `get_catalog` | Categories, services, plans with verified USD reference prices, currencies and full record schema |
 | `list_subscriptions` | Current original records and revision |
 | `preview_import` | Validate records; report added, skipped and possible duplicate IDs |
 | `import_subscriptions` | Atomically append a batch with a stable `importId` |
@@ -25,11 +25,15 @@ On Windows use the installed `subbit.exe` path. MCP uses stdio JSON-RPC and the 
 
 Read the catalog/schema first. Generate stable record IDs, preserve original currencies and decimal strings, and do not guess missing amounts. Always preview. Import retries must reuse the same `importId` and identical records. Identical record IDs are skipped; conflicting IDs reject the whole batch. Matching service names with different IDs require `allowDuplicates: true`, for intentional separate accounts.
 
+Catalog `prices` are optional reference prices, not saved bills. Each quote has `amountUsd` and, for recurring purchases, a `cycleUnit` and optional `cycleCount` (default 1). Yearly quotes contain the full annual charge. Check `priceSource`, `priceReviewedAt` and `priceBasis` before using a quote; per-seat amounts cover one seat. Only use a reference price when the user chooses it. MCP imports still require complete records and do not automatically apply catalog prices or currency conversion.
+
 All tools check the enabled setting on every call. Desktop and MCP use the same file lock, validation, atomic replacement and backup. Foreground windows refresh within 15 seconds or when focused. No polling occurs when the interface is closed.
 
 `get_summary` returns null totals and `missingRates` when conversion is unavailable. It does not fetch the network or assume missing rates are 1:1. Update rates in the app or configure fixed rates.
 
 For development and isolated tests, `SUBBIT_CONFIG_DIR` overrides both the configuration and initial data directories. Never point test runs at personal data.
+
+Run `python3 scripts/smoke-mcp.py` against the debug executable, or pass a built executable path, for example `python3 scripts/smoke-mcp.py src-tauri/target/release/bundle/macos/Subbit.app/Contents/MacOS/subbit`. The script creates temporary isolated data and checks that the executable's catalog matches the repository.
 
 Data returned to a cloud Agent is processed by that Agent, even though Subbit itself stores everything locally.
 

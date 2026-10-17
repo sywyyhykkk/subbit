@@ -8,19 +8,39 @@
   "iconLicense": "CC0-1.0",
   "source": "https://www.notion.com/pricing",
   "reviewedAt": "2026-10-16",
-  "regions": ["Availability and plan names vary by region"],
+  "regions": [
+    "Availability and plan names vary by region"
+  ],
   "plans": [
     {
       "id": "1",
       "name": "Plus",
       "kind": "recurring",
-      "retired": false
+      "retired": false,
+      "prices": [
+        {
+          "amountUsd": "120.00",
+          "cycleUnit": "year"
+        }
+      ],
+      "priceSource": "https://www.notion.com/pricing",
+      "priceReviewedAt": "2026-10-17",
+      "priceBasis": "per-seat"
     },
     {
       "id": "2",
       "name": "Business",
       "kind": "recurring",
-      "retired": false
+      "retired": false,
+      "prices": [
+        {
+          "amountUsd": "240.00",
+          "cycleUnit": "year"
+        }
+      ],
+      "priceSource": "https://www.notion.com/pricing",
+      "priceReviewedAt": "2026-10-17",
+      "priceBasis": "per-seat"
     },
     {
       "id": "3",

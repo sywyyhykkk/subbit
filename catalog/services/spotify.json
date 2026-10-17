@@ -8,31 +8,65 @@
   "iconLicense": "CC0-1.0",
   "source": "https://www.spotify.com/us/premium/",
   "reviewedAt": "2026-10-16",
-  "regions": ["Availability and plan names vary by region"],
+  "regions": [
+    "Availability and plan names vary by region"
+  ],
   "plans": [
     {
       "id": "1",
       "name": "Individual",
       "kind": "recurring",
-      "retired": false
+      "retired": false,
+      "prices": [
+        {
+          "amountUsd": "12.99",
+          "cycleUnit": "month"
+        }
+      ],
+      "priceSource": "https://www.spotify.com/us/premium/",
+      "priceReviewedAt": "2026-10-17"
     },
     {
       "id": "2",
       "name": "Duo",
       "kind": "recurring",
-      "retired": false
+      "retired": false,
+      "prices": [
+        {
+          "amountUsd": "18.99",
+          "cycleUnit": "month"
+        }
+      ],
+      "priceSource": "https://www.spotify.com/us/premium/",
+      "priceReviewedAt": "2026-10-17"
     },
     {
       "id": "3",
       "name": "Family",
       "kind": "recurring",
-      "retired": false
+      "retired": false,
+      "prices": [
+        {
+          "amountUsd": "21.99",
+          "cycleUnit": "month"
+        }
+      ],
+      "priceSource": "https://www.spotify.com/us/premium/",
+      "priceReviewedAt": "2026-10-17"
     },
     {
       "id": "4",
       "name": "Student",
       "kind": "recurring",
-      "retired": false
+      "retired": false,
+      "prices": [
+        {
+          "amountUsd": "6.99",
+          "cycleUnit": "month"
+        }
+      ],
+      "priceSource": "https://www.spotify.com/us/premium/",
+      "priceReviewedAt": "2026-10-17"
     }
   ]
 }

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import Icon from "./Icon.svelte";
+  import { presetQuote } from "./pricing";
   import { invoke, isTauri } from "@tauri-apps/api/core";
   import { listen } from "@tauri-apps/api/event";
   import { open, save, confirm } from "@tauri-apps/plugin-dialog";
@@ -37,6 +38,8 @@
   let pickerSearch = $state(""),
     pickerCategory = $state("all");
   let record: Subscription = $state(blank());
+  let planPresetId = $state("");
+  let autoPrice = $state(false);
   let editRevision = 0;
   let prefs: Settings = $state(structuredClone(defaultSettings));
   let settingsRevision = 0,
@@ -67,6 +70,8 @@
   const selectedService = $derived(
     services.find((s) => s.id === record.serviceId),
   );
+  const selectedPlan = $derived(selectedService?.plans.find((p) => p.id === planPresetId));
+  const quote = $derived.by(() => presetQuote(selectedPlan, record, snap?.database));
   const pickerServices = $derived(
     services.filter(
       (s) =>
@@ -240,15 +245,18 @@
       record.name = service.name;
       record.serviceId = service.id;
       record.category = service.category;
-      record.plan = service.plans[0]?.name ?? "";
-      record.kind = service.plans[0]?.kind ?? "recurring";
-      record.cycleUnit = service.plans[0]?.cycleUnit ?? record.cycleUnit;
+      planPresetId = service.plans.find((p) => !p.retired)?.id ?? "";
+      applyPlan(service.plans.find((p) => p.id === planPresetId));
     } else if (custom) {
+      planPresetId = "";
+      autoPrice = false;
       record.name = custom.name;
       record.icon = custom.icon;
       record.category = custom.category;
       record.plan = custom.plan;
     } else {
+      planPresetId = "";
+      autoPrice = false;
       record.name = pickerSearch;
       record.category = pickerCategory === "all" ? "other" : pickerCategory;
     }
@@ -260,6 +268,9 @@
       return;
     }
     record = structuredClone($state.snapshot(s));
+    planPresetId = services.find((service) => service.id === s.serviceId)
+      ?.plans.find((p) => p.name === s.plan)?.id ?? "";
+    autoPrice = false;
     editRevision = snap!.database.revision;
     modal = "editor";
   }
@@ -271,14 +282,14 @@
       record.autoRenew = true;
     }
   }
-  function planChanged() {
-    const plan = selectedService?.plans.find((p) => p.name === record.plan);
+  function applyPlan(plan: Service["plans"][number] | undefined) {
+    autoPrice = !!plan;
+    record.plan = plan?.name ?? "";
+    record.amount = "";
     if (plan) {
       record.kind = plan.kind;
-      if (plan.cycleUnit) {
-        record.cycleUnit = plan.cycleUnit;
-        record.cycleCount = 1;
-      }
+      record.cycleUnit = plan.prices?.[0]?.cycleUnit ?? plan.cycleUnit ?? "month";
+      record.cycleCount = plan.prices?.[0]?.cycleCount ?? 1;
       setKind();
     }
   }
@@ -468,6 +479,9 @@
       notice = tr("连接配置已复制", "Connection config copied");
     });
   }
+  $effect(() => {
+    if (autoPrice) record.amount = quote.status === "ready" ? quote.amount : "";
+  });
   $effect(() => {
     document.documentElement.dataset.theme =
       snap?.database.settings.theme ?? "system";
@@ -774,17 +788,21 @@
                   >{en ? c.en : c.zh}</option
                 >{/each}</select
             ></label
-          ><label
-            >{tr("套餐 / 档位", "Plan")}<input
-              list="plans"
-              bind:value={record.plan}
-              onchange={planChanged}
-              placeholder={tr("选择或输入", "Select or type")}
-            /><datalist id="plans"
-              >{#each selectedService?.plans ?? [] as p}<option value={p.name}
-                ></option>{/each}</datalist
-            ></label
-          >
+          ><div class="plan-field">
+            {#if selectedService}<label>
+              {tr("套餐 / 档位", "Plan")}
+              <select bind:value={planPresetId} onchange={() => applyPlan(selectedService?.plans.find((p) => p.id === planPresetId))}>
+                {#each selectedService.plans.filter((p) => !p.retired || p.id === planPresetId) as p}
+                  <option value={p.id}>{p.name}{p.retired ? tr("（旧套餐）", " (legacy)") : ""}</option>
+                {/each}
+                <option value="">{tr("自定义套餐", "Custom plan")}</option>
+              </select>
+            </label>{/if}
+            {#if !selectedService || !planPresetId}<label>
+              {tr("自定义套餐", "Custom plan")}
+              <input bind:value={record.plan} placeholder={tr("输入套餐名称", "Enter plan name")} />
+            </label>{/if}
+          </div>
         </div>
         <fieldset class="kind-choice">
           <legend>{tr("购买方式", "Purchase type")}</legend><label
@@ -819,6 +837,7 @@
               inputmode="decimal"
               pattern={"[0-9]+([.][0-9]{1,12})?"}
               bind:value={record.amount}
+              oninput={() => (autoPrice = false)}
               placeholder="0.00"
             /></label
           ><label
@@ -834,6 +853,24 @@
             ></label
           >
         </div>
+        {#if selectedPlan}<div class="hint price-hint" aria-live="polite">
+          {#if quote.status === "unpriced"}
+            {tr("此套餐或付款周期暂无固定参考价，请填写实际账单金额。", "No fixed reference price for this plan or billing cycle. Enter your bill amount.")}
+          {:else}
+            <span>{tr("美元参考价", "USD reference price")}: ${quote.price.amountUsd}
+              {#if quote.price.cycleUnit} / {quote.price.cycleCount ?? 1} {unitLabel(quote.price.cycleUnit)}{/if}
+              {selectedPlan.priceBasis === "per-seat" ? tr(" / 人", " / seat") : ""}
+              · {selectedPlan.priceReviewedAt ?? selectedService?.reviewedAt}
+            </span>
+            {#if quote.status === "missing-rate"}
+              <span>{tr("缺少有效汇率，请在更多选项填写固定汇率，或手动输入金额。", "Exchange rate unavailable. Set a fixed rate under More options or enter the amount manually.")}</span>
+            {:else}
+              <span>{tr("按美元标价换算，税费及地区定价以实际账单为准，可直接修改。", "Converted from USD list price. Regional prices and taxes may differ; edit to match your bill.")}</span>
+              {#if !autoPrice}<button type="button" onclick={() => (autoPrice = true)}>{tr("使用参考价", "Use reference price")}</button>{/if}
+            {/if}
+          {/if}
+          <a href={selectedPlan.priceSource ?? selectedService?.source} target="_blank" rel="noreferrer">{tr("官方价格", "Official pricing")}</a>
+        </div>{/if}
         {#if record.kind === "recurring"}<div class="form-grid">
             <label
               >{tr("每隔", "Every")}<input
@@ -945,7 +982,7 @@
             )}<input
               inputmode="decimal"
               value={record.fixedUsdRate ?? ""}
-              onchange={(e) =>
+              oninput={(e) =>
                 (record.fixedUsdRate = e.currentTarget.value || null)}
               placeholder={tr(
                 "留空使用最新汇率",

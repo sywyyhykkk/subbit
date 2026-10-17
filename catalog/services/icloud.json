@@ -8,37 +8,79 @@
   "iconLicense": "CC0-1.0",
   "source": "https://www.apple.com/icloud/",
   "reviewedAt": "2026-10-16",
-  "regions": ["Availability and plan names vary by region"],
+  "regions": [
+    "Availability and plan names vary by region"
+  ],
   "plans": [
     {
       "id": "1",
       "name": "50GB",
       "kind": "recurring",
-      "retired": false
+      "retired": false,
+      "prices": [
+        {
+          "amountUsd": "0.99",
+          "cycleUnit": "month"
+        }
+      ],
+      "priceSource": "https://www.apple.com/icloud/",
+      "priceReviewedAt": "2026-10-17"
     },
     {
       "id": "2",
       "name": "200GB",
       "kind": "recurring",
-      "retired": false
+      "retired": false,
+      "prices": [
+        {
+          "amountUsd": "2.99",
+          "cycleUnit": "month"
+        }
+      ],
+      "priceSource": "https://www.apple.com/icloud/",
+      "priceReviewedAt": "2026-10-17"
     },
     {
       "id": "3",
       "name": "2TB",
       "kind": "recurring",
-      "retired": false
+      "retired": false,
+      "prices": [
+        {
+          "amountUsd": "9.99",
+          "cycleUnit": "month"
+        }
+      ],
+      "priceSource": "https://www.apple.com/icloud/",
+      "priceReviewedAt": "2026-10-17"
     },
     {
       "id": "4",
       "name": "6TB",
       "kind": "recurring",
-      "retired": false
+      "retired": false,
+      "prices": [
+        {
+          "amountUsd": "29.99",
+          "cycleUnit": "month"
+        }
+      ],
+      "priceSource": "https://www.apple.com/icloud/",
+      "priceReviewedAt": "2026-10-17"
     },
     {
       "id": "5",
       "name": "12TB",
       "kind": "recurring",
-      "retired": false
+      "retired": false,
+      "prices": [
+        {
+          "amountUsd": "59.99",
+          "cycleUnit": "month"
+        }
+      ],
+      "priceSource": "https://www.apple.com/icloud/",
+      "priceReviewedAt": "2026-10-17"
     }
   ]
 }

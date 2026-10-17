@@ -1,0 +1,32 @@
+{
+  "id": "huawei-cloud",
+  "name": "华为云",
+  "category": "cloud",
+  "aliases": [
+    "Huawei Cloud",
+    "ECS",
+    "Flexus"
+  ],
+  "icon": "/catalog/icons/huawei-cloud.svg",
+  "iconSource": "https://github.com/simple-icons/simple-icons/blob/16.35.0/icons/huawei.svg",
+  "iconLicense": "CC0-1.0",
+  "source": "https://www.huaweicloud.com/intl/en-us/product/ecs.html",
+  "reviewedAt": "2026-10-17",
+  "regions": [
+    "Availability, configuration and charges vary by region. Enter actual usage charges; fixed USD prices are reference monthly amounts excluding optional extras."
+  ],
+  "plans": [
+    {
+      "id": "plan-1",
+      "name": "ECS 弹性云服务器",
+      "kind": "recurring",
+      "retired": false
+    },
+    {
+      "id": "plan-2",
+      "name": "Flexus X Instance",
+      "kind": "recurring",
+      "retired": false
+    }
+  ]
+}

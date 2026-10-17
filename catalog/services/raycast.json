@@ -7,18 +7,49 @@
   "iconSource": "https://simpleicons.org/",
   "iconLicense": "CC0-1.0",
   "source": "https://www.raycast.com/pro",
-  "reviewedAt": "2026-10-16",
-  "regions": ["Availability and plan names vary by region"],
+  "reviewedAt": "2026-10-17",
+  "regions": [
+    "Availability and plan names vary by region"
+  ],
   "plans": [
     {
       "id": "1",
       "name": "Pro",
       "kind": "recurring",
-      "retired": false
+      "retired": false,
+      "prices": [
+        {
+          "amountUsd": "96.00",
+          "cycleUnit": "year"
+        }
+      ],
+      "priceSource": "https://www.raycast.com/pro",
+      "priceReviewedAt": "2026-10-17"
     },
     {
       "id": "2",
       "name": "Team Pro",
+      "kind": "recurring",
+      "retired": false,
+      "prices": [
+        {
+          "amountUsd": "144.00",
+          "cycleUnit": "year"
+        }
+      ],
+      "priceSource": "https://www.raycast.com/pro",
+      "priceReviewedAt": "2026-10-17",
+      "priceBasis": "per-seat"
+    },
+    {
+      "id": "pro-plus",
+      "name": "Pro+",
+      "kind": "recurring",
+      "retired": false
+    },
+    {
+      "id": "pro-max",
+      "name": "Pro Max",
       "kind": "recurring",
       "retired": false
     }

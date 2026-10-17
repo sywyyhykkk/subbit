@@ -1,6 +1,7 @@
 """Exercise the real stdio executable with isolated local data, no Agent runtime needed."""
-import json, os, pathlib, subprocess, tempfile
-binary=pathlib.Path(__file__).resolve().parents[1]/'src-tauri'/'target'/'debug'/('subbit.exe' if os.name=='nt' else 'subbit')
+import json, os, pathlib, subprocess, sys, tempfile
+repo=pathlib.Path(__file__).resolve().parents[1]
+binary=pathlib.Path(sys.argv[1]).resolve() if len(sys.argv)>1 else repo/'src-tauri'/'target'/'debug'/('subbit.exe' if os.name=='nt' else 'subbit')
 record={'id':'smoke-1','name':'MCP smoke example','serviceId':None,'category':'other','plan':'Annual','icon':None,'amount':'1200','currency':'CNY','kind':'recurring','cycleUnit':'year','cycleCount':1,'purchasedAt':'2025-01-31','expiresAt':None,'autoRenew':True,'active':True,'reimbursement':'fixed','reimbursementValue':'600','paymentMethod':'card','notes':'Test fixture','fixedUsdRate':None}
 with tempfile.TemporaryDirectory(prefix='subbit-mcp-') as root:
  data=pathlib.Path(root)/'data';data.mkdir()
@@ -16,7 +17,10 @@ with tempfile.TemporaryDirectory(prefix='subbit-mcp-') as root:
  assert request(1,'initialize',{'protocolVersion':'2025-11-25','clientInfo':{'name':'smoke','version':'1'},'capabilities':{}})['protocolVersion']=='2025-11-25'
  p.stdin.write('{"jsonrpc":"2.0","method":"notifications/initialized"}\n');p.stdin.flush()
  assert len(request(2,'tools/list')['tools'])==5
- assert len(call(3,'get_catalog')['catalog']['services'])==37
+ catalog=call(3,'get_catalog')['catalog']
+ expected_services=[json.loads(path.read_text(encoding='utf-8')) for path in sorted((repo/'catalog'/'services').glob('*.json'))]
+ assert catalog['services']==expected_services
+ assert catalog['categories']==json.loads((repo/'catalog'/'categories.json').read_text(encoding='utf-8'))
  assert call(4,'preview_import',{'records':[record]})['added']==1
  assert call(5,'list_subscriptions')['subscriptions']==[]
  assert call(6,'import_subscriptions',{'importId':'test-import','records':[record]})['added']==1

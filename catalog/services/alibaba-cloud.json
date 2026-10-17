@@ -1,0 +1,33 @@
+{
+  "id": "alibaba-cloud",
+  "name": "阿里云",
+  "category": "cloud",
+  "aliases": [
+    "Alibaba Cloud",
+    "Aliyun",
+    "ECS",
+    "轻量应用服务器"
+  ],
+  "icon": "/catalog/icons/alibaba-cloud.svg",
+  "iconSource": "https://github.com/simple-icons/simple-icons/blob/16.35.0/icons/alibabacloud.svg",
+  "iconLicense": "CC0-1.0",
+  "source": "https://www.alibabacloud.com/en/product/ecs",
+  "reviewedAt": "2026-10-17",
+  "regions": [
+    "Availability, configuration and charges vary by region. Enter actual usage charges; fixed USD prices are reference monthly amounts excluding optional extras."
+  ],
+  "plans": [
+    {
+      "id": "plan-1",
+      "name": "ECS 云服务器",
+      "kind": "recurring",
+      "retired": false
+    },
+    {
+      "id": "plan-2",
+      "name": "Simple Application Server 轻量应用服务器",
+      "kind": "recurring",
+      "retired": false
+    }
+  ]
+}

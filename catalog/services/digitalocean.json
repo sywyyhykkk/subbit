@@ -1,0 +1,127 @@
+{
+  "id": "digitalocean",
+  "name": "DigitalOcean",
+  "category": "cloud",
+  "aliases": [
+    "DO",
+    "Droplets"
+  ],
+  "icon": "/catalog/icons/digitalocean.svg",
+  "iconSource": "https://github.com/simple-icons/simple-icons/blob/16.35.0/icons/digitalocean.svg",
+  "iconLicense": "CC0-1.0",
+  "source": "https://www.digitalocean.com/pricing/droplets",
+  "reviewedAt": "2026-10-17",
+  "regions": [
+    "Availability, configuration and charges vary by region. Enter actual usage charges; fixed USD prices are reference monthly amounts excluding optional extras."
+  ],
+  "plans": [
+    {
+      "id": "plan-1",
+      "name": "Basic · 512 MiB / 1 vCPU / 10 GiB SSD",
+      "kind": "recurring",
+      "retired": false,
+      "prices": [
+        {
+          "amountUsd": "4.00",
+          "cycleUnit": "month"
+        }
+      ],
+      "priceSource": "https://www.digitalocean.com/pricing/droplets",
+      "priceReviewedAt": "2026-10-17"
+    },
+    {
+      "id": "plan-2",
+      "name": "Basic · 1 GiB / 1 vCPU / 25 GiB SSD",
+      "kind": "recurring",
+      "retired": false,
+      "prices": [
+        {
+          "amountUsd": "6.00",
+          "cycleUnit": "month"
+        }
+      ],
+      "priceSource": "https://www.digitalocean.com/pricing/droplets",
+      "priceReviewedAt": "2026-10-17"
+    },
+    {
+      "id": "plan-3",
+      "name": "Basic · 2 GiB / 1 vCPU / 50 GiB SSD",
+      "kind": "recurring",
+      "retired": false,
+      "prices": [
+        {
+          "amountUsd": "12.00",
+          "cycleUnit": "month"
+        }
+      ],
+      "priceSource": "https://www.digitalocean.com/pricing/droplets",
+      "priceReviewedAt": "2026-10-17"
+    },
+    {
+      "id": "plan-4",
+      "name": "Basic · 2 GiB / 2 vCPU / 60 GiB SSD",
+      "kind": "recurring",
+      "retired": false,
+      "prices": [
+        {
+          "amountUsd": "18.00",
+          "cycleUnit": "month"
+        }
+      ],
+      "priceSource": "https://www.digitalocean.com/pricing/droplets",
+      "priceReviewedAt": "2026-10-17"
+    },
+    {
+      "id": "plan-5",
+      "name": "Basic · 4 GiB / 2 vCPU / 80 GiB SSD",
+      "kind": "recurring",
+      "retired": false,
+      "prices": [
+        {
+          "amountUsd": "24.00",
+          "cycleUnit": "month"
+        }
+      ],
+      "priceSource": "https://www.digitalocean.com/pricing/droplets",
+      "priceReviewedAt": "2026-10-17"
+    },
+    {
+      "id": "plan-6",
+      "name": "Basic · 8 GiB / 4 vCPU / 160 GiB SSD",
+      "kind": "recurring",
+      "retired": false,
+      "prices": [
+        {
+          "amountUsd": "48.00",
+          "cycleUnit": "month"
+        }
+      ],
+      "priceSource": "https://www.digitalocean.com/pricing/droplets",
+      "priceReviewedAt": "2026-10-17"
+    },
+    {
+      "id": "plan-7",
+      "name": "CPU-Optimized",
+      "kind": "recurring",
+      "retired": false
+    },
+    {
+      "id": "plan-8",
+      "name": "General Purpose",
+      "kind": "recurring",
+      "retired": false
+    },
+    {
+      "id": "plan-9",
+      "name": "Memory-Optimized",
+      "kind": "recurring",
+      "retired": false
+    },
+    {
+      "id": "plan-10",
+      "name": "Storage-Optimized",
+      "kind": "recurring",
+      "retired": false
+    }
+  ]
+}

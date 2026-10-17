@@ -1,5 +1,7 @@
 # Subbit
 
+[English](README.md) | [简体中文](README.zh-CN.md)
+
 **数字生活，心中有数。** A small, local-first companion for your subscriptions and lifetime software purchases.
 
 Rust + Tauri 2 + Svelte 5. macOS and Windows. No account, server, or bundled browser.
@@ -11,13 +13,13 @@ Rust + Tauri 2 + Svelte 5. macOS and Windows. No account, server, or bundled bro
 - Recurring purchases with an optional expiry date and calendar-aware automatic renewal. Turn off renewal to stop counting a subscription after its expiry day.
 - Lifetime purchases amortized over elapsed calendar days. As ownership time grows, average cost decreases.
 - Full, fixed-amount and percentage reimbursement; Apple App Store, Google Play, bank card, Alipay, WeChat Pay, PayPal, crypto and other payment methods.
-- 37 bundled services across media, productivity, AI, cloud storage, developer tools and design, including Apple Developer Program annual membership. VPN is a generic category; custom names, plans and local icons are supported.
+- 47 bundled services in 9 categories, including cloud servers from AWS, Google Cloud, Alibaba Cloud, Vultr, DigitalOcean, Hetzner, Tencent Cloud, Huawei Cloud, Microsoft Azure and OVHcloud. VPN is a generic category; custom names, plans and local icons are supported.
 - 26 fiat currencies plus USDT, USDC, BTC, ETH and SOL. Automatic cached exchange rates, global fixed rates and a fixed acquisition rate per asset.
 - Chinese / English, system / light / dark appearance, configurable spending levels and optional launch at login.
 - Local JSON, backup before writes, selectable storage directory, import preview and full export including custom icons.
 - Five local stdio MCP tools for Agent-assisted import and querying.
 
-Prices are entered from your own bill. Preset plan names are editable and region-dependent. Subbit records costs; it never charges a card or renews a real service.
+Verified fixed-price plans prefill a USD reference price and convert it to the selected currency using your fixed or cached exchange rate. Monthly and annual billing use their own published prices. You can edit the amount or choose a custom plan; saved bills remain unchanged. Usage-based cloud servers, custom quotes and plans without verified prices require manual entry. Regional pricing and taxes may differ from the reference. Subbit records costs; it never charges a card or renews a real service.
 
 ## Development
 
@@ -33,6 +35,7 @@ npm run tauri dev
 ```sh
 npm run check
 npm run catalog:check
+npm run test:pricing
 npm run build
 cargo test --locked --manifest-path src-tauri/Cargo.toml
 cargo build --locked --manifest-path src-tauri/Cargo.toml
@@ -71,10 +74,37 @@ Exchange providers: [Frankfurter](https://frankfurter.dev/) for fiat and [Coinba
 
 Billing currency is distinct from payment method: a USD-priced subscription paid using USDT remains USD-priced. A subscription priced directly in BTC follows the BTC quote unless you set a fixed acquisition rate. All fixed rates mean **USD per one original currency unit**.
 
-## Agent access and contributions
+## Use Subbit with an Agent (MCP)
 
-See [MCP setup](docs/MCP.md) and the [subscription JSON schema](catalog/subscription.schema.json). Enable MCP in settings before connecting an Agent. The executable supports `subbit --mcp` without creating a desktop window.
+Subbit includes a local MCP server so an MCP-compatible Agent can read your subscriptions, summarize costs and import records from information you provide. It runs as `subbit --mcp` over stdio, using the same local data as the desktop app, without opening a window or network port.
 
-Add services and categories through [catalog contributions](catalog/CONTRIBUTING.md). Plans have stable IDs and an explicit recurring/lifetime type. Catalog updates preserve the snapshots in existing records. User-defined services can be reused from the picker while their saved records exist.
+1. Install or move Subbit to its final location, then open it.
+2. Open **Settings → Agent / MCP**, enable MCP and save.
+3. Copy the generated configuration into your Agent client's MCP configuration. It contains the executable's actual path and `args: ["--mcp"]`; adapt the format if your client requires it. On Windows, the command points to `subbit.exe`.
+4. Reconnect the Agent client. Ask it to read the catalog and your current subscriptions before importing anything.
+
+| Tool | What the Agent can do |
+| --- | --- |
+| `get_catalog` | Read services, plans, verified USD reference prices, currencies and the record schema |
+| `list_subscriptions` | Read saved subscriptions and their revision |
+| `get_summary` | Calculate hourly, monthly or yearly costs in a chosen currency |
+| `preview_import` | Validate a batch and report duplicates before writing |
+| `import_subscriptions` | Append a batch with a stable `importId` so retries do not duplicate it |
+
+Example request: “Use Subbit to summarize my monthly subscription costs in CNY.” For imports: “Read this bill, prepare Subbit records and show me the import preview before importing.” Amounts must come from your bill or an explicitly chosen reference price; MCP does not automatically fill missing fields or fetch exchange rates. Subbit stays local, but records returned to a cloud Agent are processed by that Agent.
+
+See [MCP configuration and import examples](docs/MCP.md) and the [subscription JSON schema](catalog/subscription.schema.json).
+
+## Contribute service presets
+
+Presets are shared by the desktop picker and MCP. To add a service or fix its plans:
+
+1. Copy a similar JSON file in `catalog/services/`. Give it a stable lowercase kebab-case ID matching its filename, the official name, search aliases, category, source URL, review date and region information.
+2. Add plans with stable IDs and `kind: "recurring"` or `"lifetime"`. Mark discontinued plans `retired: true` instead of deleting them.
+3. For verified fixed prices, add USD `prices`, `priceSource` and `priceReviewedAt`. Use the full annual charge for yearly billing, omit the cycle for lifetime purchases, and mark per-seat prices. Leave usage-based, custom-quoted or unverified amounts unset.
+4. Bundle an SVG or PNG in `catalog/icons/` and record its source and license. Add a category to `catalog/categories.json` only when needed, with both Chinese and English labels.
+5. Run `npm run catalog:check`, `npm run test:pricing` and `npm run check`, then submit a pull request with the catalog files, icon and official source links.
+
+See the [complete catalog contribution guide](catalog/CONTRIBUTING.md). Catalog updates preserve existing saved names, plans and amounts. For personal-only entries, choose **Custom service** in the app; no repository contribution is needed.
 
 Application artwork is temporary. Brand icons retain their respective licenses and trademark rights; source metadata lives beside every service entry. Code and original assets are [MIT licensed](LICENSE).

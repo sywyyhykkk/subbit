@@ -2,20 +2,35 @@
   "id": "apple-developer",
   "name": "Apple Developer Program",
   "category": "developer",
-  "aliases": ["Apple Developer", "苹果开发者", "苹果开发者计划", "苹果开发者会员"],
+  "aliases": [
+    "Apple Developer",
+    "苹果开发者",
+    "苹果开发者计划",
+    "苹果开发者会员"
+  ],
   "icon": "/catalog/icons/apple-developer.svg",
   "iconSource": "https://simpleicons.org/",
   "iconLicense": "CC0-1.0",
   "source": "https://developer.apple.com/programs/enroll/",
   "reviewedAt": "2026-10-17",
-  "regions": ["Annual membership; prices vary by region and are shown in local currency during enrollment"],
+  "regions": [
+    "Annual membership; prices vary by region and are shown in local currency during enrollment"
+  ],
   "plans": [
     {
       "id": "annual-membership",
       "name": "Apple Developer Program",
       "kind": "recurring",
       "cycleUnit": "year",
-      "retired": false
+      "retired": false,
+      "prices": [
+        {
+          "amountUsd": "99.00",
+          "cycleUnit": "year"
+        }
+      ],
+      "priceSource": "https://developer.apple.com/programs/enroll/",
+      "priceReviewedAt": "2026-10-17"
     }
   ]
 }

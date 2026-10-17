@@ -7,32 +7,56 @@
   "iconSource": "https://simpleicons.org/",
   "iconLicense": "CC0-1.0",
   "source": "https://webflow.com/pricing",
-  "reviewedAt": "2026-10-16",
-  "regions": ["Availability and plan names vary by region"],
+  "reviewedAt": "2026-10-17",
+  "regions": [
+    "Availability and plan names vary by region"
+  ],
   "plans": [
     {
       "id": "1",
       "name": "Basic",
       "kind": "recurring",
-      "retired": false
+      "retired": false,
+      "prices": [
+        {
+          "amountUsd": "180.00",
+          "cycleUnit": "year"
+        }
+      ],
+      "priceSource": "https://webflow.com/pricing",
+      "priceReviewedAt": "2026-10-17"
     },
     {
       "id": "2",
       "name": "CMS",
       "kind": "recurring",
-      "retired": false
+      "retired": true
     },
     {
       "id": "3",
       "name": "Business",
       "kind": "recurring",
-      "retired": false
+      "retired": true
     },
     {
       "id": "4",
       "name": "Enterprise",
       "kind": "recurring",
       "retired": false
+    },
+    {
+      "id": "premium",
+      "name": "Premium",
+      "kind": "recurring",
+      "retired": false,
+      "prices": [
+        {
+          "amountUsd": "300.00",
+          "cycleUnit": "year"
+        }
+      ],
+      "priceSource": "https://webflow.com/pricing",
+      "priceReviewedAt": "2026-10-17"
     }
   ]
 }

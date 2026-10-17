@@ -24,6 +24,12 @@
     "icon": "☁"
   },
   {
+    "id": "cloud",
+    "zh": "云服务器",
+    "en": "Cloud servers",
+    "icon": "▤"
+  },
+  {
     "id": "developer",
     "zh": "开发工具",
     "en": "Developer",

@@ -1,0 +1,26 @@
+{
+  "id": "hetzner",
+  "name": "Hetzner",
+  "category": "cloud",
+  "aliases": [
+    "Hetzner Cloud",
+    "赫兹纳",
+    "VPS"
+  ],
+  "icon": "/catalog/icons/hetzner.svg",
+  "iconSource": "https://github.com/simple-icons/simple-icons/blob/16.35.0/icons/hetzner.svg",
+  "iconLicense": "CC0-1.0",
+  "source": "https://www.hetzner.com/cloud/",
+  "reviewedAt": "2026-10-17",
+  "regions": [
+    "Availability, configuration and charges vary by region. Enter actual usage charges; fixed USD prices are reference monthly amounts excluding optional extras."
+  ],
+  "plans": [
+    {
+      "id": "plan-1",
+      "name": "Cloud",
+      "kind": "recurring",
+      "retired": false
+    }
+  ]
+}

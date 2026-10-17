@@ -57,6 +57,7 @@
     search = $state(""),
     filter = $state("all");
   let sortBy = $state("added"), sortOrder = $state("desc");
+  let offline = $state(false);
   let version = $state(appInfo.version);
   let update: Update | null = $state(null);
   let updateState = $state<"idle" | "checking" | "available" | "current" | "downloading" | "installed" | "error">("idle");
@@ -216,7 +217,7 @@
     if (isTauri()) applyDirectory(await call<CatalogState>("load_catalog"));
   }
   async function refreshDirectory(force = false) {
-    if (!isTauri() || catalogBusy) return;
+    if (!isTauri() || catalogBusy || offline) return;
     catalogBusy = true;
     catalogError = false;
     try {
@@ -261,6 +262,7 @@
         };
         return;
       }
+      offline = await call<boolean>("offline_mode");
       const requestedCurrency = currency, requestedPeriod = period;
       const next = await call<Snapshot | null>(
         "snapshot",
@@ -482,6 +484,24 @@
         error = String(e);
       }
   }
+  async function toggleOffline() {
+    if (updateState === "downloading") { error = tr("请等待应用更新完成", "Wait for the application update to finish"); return; }
+    const enabled = !offline;
+    if (enabled && !await confirm(tr(
+      "开启后将停止联网更新汇率、服务目录、网站图标和应用版本。\n\n本地汇率可能已过时，换算结果可能与实时价格有差异；服务目录可能不包含最新服务、套餐和参考价。已保存的资产不受影响。\n\n你仍可在设置中填写固定汇率，或通过 Agent 使用 MCP 导入汇率和服务目录。",
+      "Subbit will stop updating exchange rates, the service catalog, website icons and the application online.\n\nLocal rates may be outdated and conversions may differ from current prices. The catalog may lack recent services, plans and reference prices. Saved assets are unaffected.\n\nYou can still set fixed rates in Settings or use an Agent to import rates and catalogs through MCP."
+    ), { title: tr("开启离线模式", "Enable offline mode"), kind: "warning", okLabel: tr("开启离线模式", "Enable offline mode"), cancelLabel: tr("取消", "Cancel") })) return;
+    await action(async () => {
+      await call("set_offline_mode", { enabled });
+      offline = enabled;
+      if (enabled) { await update?.close(); update = null; updateState = "idle"; }
+    });
+  }
+  async function onlineAllowed() {
+    if (offline) { error = tr("请先关闭离线模式", "Turn off offline mode first"); return false; }
+    try { if (isTauri()) await call("require_online"); return true; }
+    catch (e) { error = String(e); return false; }
+  }
   async function savePrefs() {
     await action(async () => {
       await call("save_settings", {
@@ -593,22 +613,23 @@
     if (autoPrice) record.amount = quote.status === "ready" ? quote.amount : "";
   });
   async function external(url?: string) {
-    if (!url) return;
+    if (!url || !await onlineAllowed()) return;
     try { if (isTauri()) await openUrl(url); else window.open(url, "_blank", "noopener,noreferrer"); }
     catch (e) { error = String(e); }
   }
   async function checkUpdate() {
-    if (["checking", "downloading"].includes(updateState)) return;
+    if (["checking", "downloading"].includes(updateState) || !await onlineAllowed()) return;
     updateState = "checking"; updateError = "";
     try {
       if (!isTauri()) throw new Error(tr("请在桌面应用中检查更新", "Check for updates in the desktop app"));
       await update?.close(); update = null;
       update = await check({ timeout: 30000 });
+      if (!await onlineAllowed()) { await update?.close(); update = null; updateState = "idle"; return; }
       updateState = update ? "available" : "current";
     } catch (e) { updateState = "error"; updateError = String(e); }
   }
   async function installUpdate() {
-    if (!update || updateState !== "available") return;
+    if (!update || updateState !== "available" || !await onlineAllowed()) return;
     updateState = "downloading"; downloaded = 0; downloadTotal = 0;
     try {
       await update.downloadAndInstall((event) => {
@@ -644,9 +665,10 @@
       if (new URLSearchParams(location.search).has("about")) { await settings(); settingsTab = "about"; }
       if (isTauri()) {
         if (new URLSearchParams(location.search).has("add")) await picker();
-        for (const name of ["data-changed", "open-settings", "open-add", "open-about"]) {
+        for (const name of ["network-changed", "data-changed", "open-settings", "open-add", "open-about"]) {
           const unlisten = await listen(name, () => {
-            if (name === "open-about") void settings().then(() => settingsTab = "about");
+            if (name === "network-changed") void call<boolean>("offline_mode").then((value) => offline = value);
+            else if (name === "open-about") void settings().then(() => settingsTab = "about");
             else if (name === "open-settings") void settings();
             else if (name === "open-add") void picker();
             else if (!modal && !busy) void reload();
@@ -654,7 +676,7 @@
           if (disposed) unlisten();
           else cleanup.push(unlisten);
         }
-        if (!modal) void rates();
+        if (!modal && !offline) void rates();
         void refreshDirectory();
       }
     })();
@@ -1175,7 +1197,9 @@
         >{/each}
     </div>
     <div class="dialog-content settings-content">
-      {#if settingsTab === "general"}<div class="form-grid">
+      {#if settingsTab === "general"}
+        <div class="switch-row"><span>{tr("离线模式", "Offline mode")}<small>{tr("禁止 Subbit 主动联网，立即生效", "Stop Subbit from connecting online; applies immediately")}</small></span><button role="switch" aria-checked={offline} disabled={busy || updateState === "downloading"} onclick={toggleOffline}>{offline ? tr("已开启", "On") : tr("已关闭", "Off")}</button></div>
+        <div class="form-grid">
           <label
             >{tr("语言", "Language")}<select bind:value={prefs.language}
               ><option value="system">{tr("跟随系统", "System")}</option><option

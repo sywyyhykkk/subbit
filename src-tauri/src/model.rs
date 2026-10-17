@@ -281,7 +281,7 @@ impl Settings {
         Ok(())
     }
 }
-#[derive(Clone, Serialize, Deserialize, Debug, Default)]
+#[derive(Clone, Serialize, Deserialize, Debug, Default, PartialEq)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct Rate {
     pub usd: String,
@@ -302,6 +302,8 @@ pub struct Database {
     pub settings: Settings,
     pub rates: BTreeMap<String, Rate>,
     pub imports: BTreeMap<String, Receipt>,
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub rate_imports: BTreeMap<String, BTreeMap<String, Rate>>,
 }
 impl Default for Database {
     fn default() -> Self {
@@ -312,6 +314,7 @@ impl Default for Database {
             settings: Settings::default(),
             rates: BTreeMap::new(),
             imports: BTreeMap::new(),
+            rate_imports: BTreeMap::new(),
         }
     }
 }
@@ -359,6 +362,7 @@ impl Database {
             .fixed_rates
             .get(currency)
             .or_else(|| self.rates.get(currency).map(|r| &r.usd))
+            .or_else(|| crate::rates::bundled().get(currency).map(|r| &r.usd))
             .and_then(|s| decimal(s).ok())
             .filter(|d| *d > Decimal::ZERO)
     }

@@ -139,12 +139,13 @@ fn reimbursement_limits_and_decimal_precision() {
 fn missing_rates_never_silently_zero_totals() {
     let mut db = Database::default();
     let mut s = sample();
-    s.currency = "USD".into();
+    s.currency = "USDT".into();
     db.subscriptions.push(s);
     let r = db.summary("CNY", "month", day("2026-10-16")).unwrap();
     assert!(r["bill"].is_null());
     assert_eq!(r["missingRates"][0], "one");
     db.settings.fixed_rates.insert("CNY".into(), "0.125".into());
+    db.settings.fixed_rates.insert("USDT".into(), "1".into());
     let r = db.summary("CNY", "month", day("2026-10-16")).unwrap();
     assert_eq!(r["bill"], "800");
 }

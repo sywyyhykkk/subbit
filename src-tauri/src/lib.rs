@@ -2,6 +2,7 @@ pub mod mcp;
 pub mod catalog;
 pub mod model;
 mod rates;
+pub mod network;
 pub mod store;
 pub mod view;
 use model::*;
@@ -22,12 +23,28 @@ pub(crate) fn init_tls() {
     let _ = rustls::crypto::ring::default_provider().install_default();
 }
 #[tauri::command]
+fn offline_mode() -> Result<bool> { network::offline() }
+#[tauri::command]
+fn set_offline_mode(enabled: bool, app: tauri::AppHandle) -> Result<()> {
+    network::set_offline(enabled)?;
+    let _ = app.emit("network-changed", enabled);
+    Ok(())
+}
+#[tauri::command]
+fn require_online() -> Result<()> { network::require_online() }
+#[tauri::command]
 fn load_catalog() -> Result<catalog::CatalogState> {
-    Ok(catalog::CatalogCache::system()?.load())
+    let mut state = catalog::CatalogCache::system()?.load();
+    state.imports.clear();
+    Ok(state)
 }
 #[tauri::command]
 async fn refresh_catalog(force: bool) -> Result<catalog::CatalogState> {
-    tauri::async_runtime::spawn_blocking(move || catalog::CatalogCache::system()?.refresh(force))
+    tauri::async_runtime::spawn_blocking(move || {
+        let mut state = catalog::CatalogCache::system()?.refresh(force)?;
+        state.imports.clear();
+        Ok(state)
+    })
         .await.map_err(|e| e.to_string())?
 }
 #[tauri::command]
@@ -237,6 +254,9 @@ pub fn run() {
                 .build(),
         )
         .invoke_handler(tauri::generate_handler![
+            offline_mode,
+            set_offline_mode,
+            require_online,
             load_catalog,
             refresh_catalog,
             snapshot,

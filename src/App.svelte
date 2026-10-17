@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import Icon from "./Icon.svelte";
+  import ReleaseNotes from "./ReleaseNotes.svelte";
   import { localTimestamp, bytesLabel } from "./display";
   import DatePicker from "./DatePicker.svelte";
   import { nextCycle } from "./dates";
@@ -77,6 +78,8 @@
   let offline = $state(false);
   let version = $state(appInfo.version);
   let update: Update | null = $state(null);
+  let showUpdate = $state(false);
+  let updateDialog: HTMLDialogElement;
   let updateState = $state<"idle" | "checking" | "available" | "current" | "downloading" | "installed" | "error">("idle");
   let updateError = $state(""), downloaded = $state(0), downloadTotal = $state(0);
   let systemDark = $state(window.matchMedia("(prefers-color-scheme: dark)").matches);
@@ -556,7 +559,7 @@
     await action(async () => {
       await call("set_offline_mode", { enabled });
       offline = enabled;
-      if (enabled) { await update?.close(); update = null; updateState = "idle"; }
+      if (enabled) { await update?.close(); update = null; updateState = "idle"; showUpdate = false; }
     });
   }
   async function onlineAllowed() {
@@ -689,6 +692,7 @@
       update = await check({ timeout: 30000 });
       if (!await onlineAllowed()) { await update?.close(); update = null; updateState = "idle"; return; }
       updateState = update ? "available" : "current";
+      showUpdate = !!update;
     } catch (e) { updateState = "error"; updateError = String(e); }
   }
   async function installUpdate() {
@@ -709,6 +713,10 @@
   });
   $effect(() => {
     if (modal !== "settings") preview = null;
+  });
+  $effect(() => {
+    if (showUpdate && updateDialog && !updateDialog.open) updateDialog.showModal();
+    if (!showUpdate && updateDialog?.open) updateDialog.close();
   });
   $effect(() => {
     if (modal && inputDialog && !inputDialog.open) inputDialog.showModal();
@@ -1480,7 +1488,7 @@
         <a href="https://github.com/sywyyhykkk/subbit" onclick={(e) => { e.preventDefault(); void external(e.currentTarget.href); }}>GitHub · sywyyhykkk/subbit <Icon name="arrow" size={14}/></a>
       </div>
       <div class="update-box" aria-live="polite">
-        {#if updateState === "available"}<strong>{tr("发现新版本", "New version available")} {update?.version}</strong><p class="release-notes">{update?.body ?? ""}</p><button class="primary" onclick={installUpdate}>{tr("下载并安装", "Download and install")}</button>
+        {#if updateState === "available"}<strong>{tr("发现新版本", "New version available")} {update?.version}</strong><button onclick={() => showUpdate = true}>{tr("查看更新内容", "View release notes")}</button>
         {:else if updateState === "downloading"}<span>{tr("正在下载并安装…", "Downloading and installing…")} {downloadTotal ? `${Math.min(100, Math.round(downloaded / downloadTotal * 100))}%` : `${(downloaded / 1048576).toFixed(1)} MB`}</span>
         {:else if updateState === "installed"}<p>{tr("更新已安装，重启即可使用", "Update installed. Restart to finish.")}</p><button class="primary" onclick={() => relaunch()}>{tr("立即重启", "Restart now")}</button>
         {:else}<button disabled={updateState === "checking"} onclick={checkUpdate}><Icon name="refresh" size={16}/>{updateState === "checking" ? tr("正在检查…", "Checking…") : tr("检查更新", "Check for updates")}</button>
@@ -1549,3 +1557,12 @@
       onclick={() => (notice = "")}><Icon name="close" size={16}/></button
     >
   </div>{/if}
+
+<dialog bind:this={updateDialog} class="update-dialog" aria-label={tr("更新内容", "Release notes")} oncancel={(event) => { if (updateState === "downloading") event.preventDefault(); else showUpdate = false; }}>
+  <div class="dialog-header"><h2>{tr("更新内容", "Release notes")} {update?.version ?? ""}</h2><button class="icon-button" disabled={updateState === "downloading"} aria-label={tr("关闭", "Close")} onclick={() => showUpdate = false}><Icon name="close"/></button></div>
+  <div class="dialog-content">{#if showUpdate}<ReleaseNotes text={update?.body ?? tr("暂无更新说明", "No release notes available")} openLink={(url) => void external(url)}/>{/if}{#if updateState === "error"}<p role="alert">{updateError}</p>{/if}</div>
+  <div class="dialog-footer"><button disabled={updateState === "downloading"} onclick={() => showUpdate = false}>{tr("稍后", "Later")}</button>
+    {#if updateState === "installed"}<button class="primary" onclick={() => relaunch()}>{tr("立即重启", "Restart now")}</button>
+    {:else}<button class="primary" disabled={offline || updateState !== "available"} onclick={installUpdate}>{updateState === "downloading" ? tr("正在下载并安装…", "Downloading and installing…") : tr("下载并安装", "Download and install")}</button>{/if}
+  </div>
+</dialog>

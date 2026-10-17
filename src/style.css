@@ -347,3 +347,13 @@ pre { font-family: ui-monospace, SFMono-Regular, monospace; font-size: 12px; lin
 .panel .sort-controls > span { display: none; }
 .panel .sort-controls select { max-width: 112px; padding-left: 7px; }
 .panel .list-head > span { white-space: nowrap; }
+
+.update-dialog { width: min(600px, calc(100vw - 40px)); height: min(560px, calc(100dvh - 48px)); }
+.release-markdown { font-size: 13px; line-height: 1.65; overflow-wrap: anywhere; }
+.release-markdown h1, .release-markdown h2 { font-size: 18px; margin: 16px 0 8px; }
+.release-markdown h3, .release-markdown h4 { font-size: 15px; margin: 14px 0 6px; }
+.release-markdown p { margin: 7px 0; }
+.release-markdown ul, .release-markdown ol { padding-left: 22px; }
+.release-markdown code { font-size: 12px; background: var(--subtle); border-radius: 3px; padding: 2px 4px; }
+.release-markdown pre { overflow: auto; white-space: pre-wrap; }
+.release-markdown blockquote { border-left: 2px solid var(--line); margin-left: 0; padding-left: 14px; color: var(--muted); }

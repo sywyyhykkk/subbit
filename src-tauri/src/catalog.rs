@@ -43,6 +43,11 @@ fn id(value: &Value) -> Result<&str> {
     Ok(id)
 }
 impl Catalog {
+    fn ensure_domain_category(&mut self) {
+        if !self.categories.iter().any(|c| c["id"] == "domain") {
+            self.categories.push(serde_json::json!({"id":"domain","zh":"域名","en":"Domains","icon":"◎"}));
+        }
+    }
     pub fn validate(&self) -> Result<()> {
         if self.schema_version != 1
             || self.categories.is_empty()
@@ -216,9 +221,7 @@ impl CatalogCache {
             revision: 0,
             imports: BTreeMap::new(),
         });
-        if !state.catalog.categories.iter().any(|c| c["id"] == "domain") {
-            state.catalog.categories.push(serde_json::json!({"id":"domain","zh":"域名","en":"Domains","icon":"◎"}));
-        }
+        state.catalog.ensure_domain_category();
         state
     }
     pub fn import(&self, id: String, revision: u64, catalog: Catalog) -> Result<CatalogState> {
@@ -236,6 +239,7 @@ impl CatalogCache {
         if state.revision != revision { return Err("Catalog changed; preview again".into()); }
         state.imports.insert(id, catalog.clone());
         state.catalog = catalog;
+        state.catalog.ensure_domain_category();
         state.revision += 1;
         state.updated_at = Some(chrono::Utc::now().timestamp());
         write_json(&self.root.join("catalog.json"), &state, true)?;
@@ -267,8 +271,9 @@ impl CatalogCache {
         // A failed request is retried after 15 minutes; offline window opens stay instant.
         write_json(&check_path, &now, false)?;
         let bytes = crate::network::download(url, MAX_BYTES as usize)?.bytes;
-        let catalog: Catalog = serde_json::from_slice(&bytes).map_err(|e| e.to_string())?;
+        let mut catalog: Catalog = serde_json::from_slice(&bytes).map_err(|e| e.to_string())?;
         catalog.validate()?;
+        catalog.ensure_domain_category();
         let state = CatalogState {
             revision: current.revision + 1,
             imports: current.imports,
@@ -291,6 +296,16 @@ mod tests {
     use super::*;
     use std::{io::Write, net::TcpListener};
 
+    #[test]
+    fn legacy_catalog_download_keeps_domain_category_available() {
+        let root = tempfile::tempdir().unwrap();
+        let cache = CatalogCache::at(root.path().into());
+        let mut legacy = bundled(); legacy.categories.retain(|category| category["id"] != "domain");
+        let downloaded = download(&cache, &legacy).unwrap();
+        assert!(downloaded.catalog.categories.iter().any(|category| category["id"] == "domain"));
+        let state = cache.import("legacy".into(), downloaded.revision, legacy).unwrap();
+        assert!(state.catalog.categories.iter().any(|category| category["id"] == "domain"));
+    }
     #[test]
     fn supplied_catalog_import_is_atomic_versioned_and_replay_safe() {
         let root = tempfile::tempdir().unwrap();

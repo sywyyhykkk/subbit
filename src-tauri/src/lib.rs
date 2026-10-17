@@ -3,8 +3,9 @@ pub mod catalog;
 pub mod model;
 mod rates;
 pub mod store;
+pub mod view;
 use model::*;
-use serde_json::{json, Value};
+use serde_json::Value;
 use std::path::PathBuf;
 use store::Store;
 use tauri::{
@@ -25,24 +26,13 @@ fn load_catalog() -> Result<catalog::CatalogState> {
     Ok(catalog::CatalogCache::system()?.load())
 }
 #[tauri::command]
-async fn refresh_catalog(force: bool, app: tauri::AppHandle) -> Result<catalog::CatalogState> {
-    let state = tauri::async_runtime::spawn_blocking(move || catalog::CatalogCache::system()?.refresh(force))
-        .await.map_err(|e| e.to_string())??;
-    let _ = app.emit("catalog-changed", ());
-    Ok(state)
+async fn refresh_catalog(force: bool) -> Result<catalog::CatalogState> {
+    tauri::async_runtime::spawn_blocking(move || catalog::CatalogCache::system()?.refresh(force))
+        .await.map_err(|e| e.to_string())?
 }
 #[tauri::command]
-fn snapshot(currency: Option<String>, period: Option<String>) -> Result<Value> {
-    let (db, path) = Store::system()?.read()?;
-    let summary = db.summary(
-        currency.as_deref().unwrap_or(&db.settings.currency),
-        period.as_deref().unwrap_or(&db.settings.period),
-        today(),
-    )?;
-    let level = db.spending_level(today())?;
-    Ok(
-        json!({"database":db,"path":path,"summary":summary,"level":level,"executable":std::env::current_exe().map_err(|e|e.to_string())?}),
-    )
+fn snapshot(currency: Option<String>, period: Option<String>, known: Option<view::SnapshotKey>) -> Result<Option<view::Snapshot>> {
+    view::load(&Store::system()?, currency.as_deref(), period.as_deref(), known.as_ref(), today())
 }
 #[tauri::command]
 fn save_subscription(record: Subscription, revision: u64, app: tauri::AppHandle) -> Result<()> {

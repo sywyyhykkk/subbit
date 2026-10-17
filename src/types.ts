@@ -50,7 +50,13 @@ export interface CostRow {
   elapsedDays: number;
 }
 export interface Snapshot {
-  database: Database;
+  database: Omit<Database, "imports">;
+  key: {
+    file: { path: string; length: number | null; modifiedAt: string | null };
+    currency: string;
+    period: string;
+    day: string;
+  } | null;
   path: string;
   executable: string;
   level: string | null;

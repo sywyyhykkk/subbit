@@ -3,6 +3,7 @@
   import Icon from "./Icon.svelte";
   import DatePicker from "./DatePicker.svelte";
   import { nextCycle } from "./dates";
+  import { createReloadQueue } from "./reload";
   import { localizeLevelName } from "./levels";
   import { getVersion } from "@tauri-apps/api/app";
   import { openUrl } from "@tauri-apps/plugin-opener";
@@ -230,7 +231,8 @@
       pendingDirectory = null;
     }
   });
-  async function reload(initial = false) {
+  const reload = createReloadQueue(loadSnapshot);
+  async function loadSnapshot(initial: boolean) {
     try {
       if (!isTauri()) {
         snap = {
@@ -240,8 +242,8 @@
             subscriptions: [],
             settings: structuredClone(defaultSettings),
             rates: {},
-            imports: {},
           },
+          key: null,
           path: "Documents/Subbit/subscriptions.json",
           executable: "subbit",
           level: null,
@@ -258,10 +260,12 @@
         };
         return;
       }
-      const next = await call<Snapshot>(
+      const requestedCurrency = currency, requestedPeriod = period;
+      const next = await call<Snapshot | null>(
         "snapshot",
-        initial ? {} : { currency, period },
+        initial ? {} : { currency: requestedCurrency, period: requestedPeriod, known: snap?.key },
       );
+      if (!next || (!initial && (currency !== requestedCurrency || period !== requestedPeriod))) return;
       snap = next;
       if (initial) {
         currency = next.database.settings.currency;
@@ -609,6 +613,9 @@
     if (isTauri()) void call("apply_appearance", { theme: activeTheme, dark }).catch((e) => error = String(e));
   });
   $effect(() => {
+    if (modal !== "settings") preview = null;
+  });
+  $effect(() => {
     if (modal && inputDialog && !inputDialog.open) inputDialog.showModal();
     if (!modal && inputDialog?.open) inputDialog.close();
   });
@@ -626,13 +633,12 @@
       if (new URLSearchParams(location.search).has("about")) { await settings(); settingsTab = "about"; }
       if (isTauri()) {
         if (new URLSearchParams(location.search).has("add")) await picker();
-        for (const name of ["data-changed", "catalog-changed", "open-settings", "open-add", "open-about"]) {
+        for (const name of ["data-changed", "open-settings", "open-add", "open-about"]) {
           const unlisten = await listen(name, () => {
-            if (name === "catalog-changed") void loadDirectory().catch(() => {});
-            else if (name === "open-about") void settings().then(() => settingsTab = "about");
+            if (name === "open-about") void settings().then(() => settingsTab = "about");
             else if (name === "open-settings") void settings();
             else if (name === "open-add") void picker();
-            else if (!modal) void reload();
+            else if (!modal && !busy) void reload();
           });
           if (disposed) unlisten();
           else cleanup.push(unlisten);
@@ -642,9 +648,8 @@
       }
     })();
     const focus = () => {
-      if (!modal) {
+      if (!modal && !busy) {
         void reload();
-        void loadDirectory().catch(() => {});
         void refreshDirectory();
       }
     };

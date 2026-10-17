@@ -266,3 +266,85 @@ fn move_retains_original_and_missing_location_errors() {
     std::fs::remove_file(dest.join("subscriptions.json")).unwrap();
     assert!(store.read().is_err());
 }
+
+#[test]
+fn ui_snapshot_omits_import_receipts_without_changing_backups_or_replays() {
+    let (_dir, store) = store();
+    store.update(|db| { db.settings.mcp_enabled = true; Ok(()) }).unwrap();
+    store.import_batch("batch-view".into(), vec![sample()], false).unwrap();
+    let (_, path) = store.read().unwrap();
+    let before = std::fs::read(&path).unwrap();
+    let backup_before = std::fs::read(path.with_extension("json.bak")).unwrap();
+    let snapshot = subbit_lib::view::load(&store, None, None, None, day("2026-10-18"))
+        .unwrap().unwrap();
+    let value = serde_json::to_value(snapshot).unwrap();
+    assert!(value["database"].get("imports").is_none());
+    assert_eq!(value["database"]["subscriptions"].as_array().unwrap().len(), 1);
+    assert_eq!(value["summary"]["actual"], "50");
+    assert_eq!(std::fs::read(&path).unwrap(), before);
+    assert_eq!(std::fs::read(path.with_extension("json.bak")).unwrap(), backup_before);
+    assert!(store.read().unwrap().0.imports.contains_key("batch-view"));
+    assert_eq!(store.import_batch("batch-view".into(), vec![sample()], false).unwrap()["replayed"], true);
+}
+
+fn snapshot_key(store: &Store) -> subbit_lib::view::SnapshotKey {
+    let snapshot = subbit_lib::view::load(store, Some("CNY"), Some("month"), None, day("2026-10-18"))
+        .unwrap().unwrap();
+    serde_json::from_value(serde_json::to_value(snapshot).unwrap()["key"].clone()).unwrap()
+}
+
+#[test]
+fn unchanged_snapshot_returns_nothing_but_view_changes_and_new_days_refresh() {
+    let (_dir, store) = store();
+    store.save(sample(), 0).unwrap();
+    let key = snapshot_key(&store);
+    let load = |currency, period, day| subbit_lib::view::load(&store, currency, period, Some(&key), day);
+    assert!(load(Some("CNY"), Some("month"), day("2026-10-18")).unwrap().is_none());
+    assert!(load(Some("USD"), Some("month"), day("2026-10-18")).unwrap().is_some());
+    assert!(load(Some("CNY"), Some("year"), day("2026-10-18")).unwrap().is_some());
+    assert!(load(Some("CNY"), Some("month"), day("2026-10-19")).unwrap().is_some());
+    // Reopening settings must still read the saved defaults, not the current filters.
+    assert!(load(None, None, day("2026-10-18")).unwrap().is_some());
+}
+
+#[test]
+fn snapshot_detects_another_writer_and_same_length_external_edits() {
+    let (dir, store) = store();
+    store.save(sample(), 0).unwrap();
+    let key = snapshot_key(&store);
+    let other_writer = Store::at(dir.path().into());
+    let mut changed = sample();
+    changed.amount = "2400".into();
+    other_writer.save(changed, 1).unwrap();
+    let snapshot = subbit_lib::view::load(&store, Some("CNY"), Some("month"), Some(&key), key.day)
+        .unwrap().unwrap();
+    assert_eq!(serde_json::to_value(snapshot).unwrap()["summary"]["bill"], "200");
+
+    let key = snapshot_key(&store);
+    let (mut db, path) = store.read().unwrap();
+    db.subscriptions[0].amount = "3600".into();
+    write_json(&path, &db, false).unwrap();
+    // Keep revision and byte length unchanged to exercise the modification-time check.
+    assert_eq!(std::fs::metadata(&path).unwrap().len(), key.file.length.unwrap());
+    std::fs::File::options().write(true).open(&path).unwrap()
+        .set_modified(std::time::UNIX_EPOCH + std::time::Duration::from_secs(2_000_000_000)).unwrap();
+    let snapshot = subbit_lib::view::load(&store, Some("CNY"), Some("month"), Some(&key), key.day)
+        .unwrap().unwrap();
+    assert_eq!(serde_json::to_value(snapshot).unwrap()["summary"]["bill"], "300");
+}
+
+#[test]
+fn snapshot_detects_location_changes_and_does_not_hide_missing_files() {
+    let (dir, store) = store();
+    store.save(sample(), 0).unwrap();
+    let key = snapshot_key(&store);
+    let destination = dir.path().join("moved");
+    store.move_to(destination.clone()).unwrap();
+    let snapshot = subbit_lib::view::load(&store, Some("CNY"), Some("month"), Some(&key), key.day)
+        .unwrap().unwrap();
+    let value = serde_json::to_value(snapshot).unwrap();
+    assert_eq!(value["path"], destination.join("subscriptions.json").to_str().unwrap());
+    let key = snapshot_key(&store);
+    std::fs::remove_file(destination.join("subscriptions.json")).unwrap();
+    assert!(subbit_lib::view::load(&store, Some("CNY"), Some("month"), Some(&key), key.day).is_err());
+}

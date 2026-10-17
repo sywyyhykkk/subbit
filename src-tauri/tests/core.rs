@@ -348,3 +348,27 @@ fn snapshot_detects_location_changes_and_does_not_hide_missing_files() {
     std::fs::remove_file(destination.join("subscriptions.json")).unwrap();
     assert!(subbit_lib::view::load(&store, Some("CNY"), Some("month"), Some(&key), key.day).is_err());
 }
+
+#[test]
+fn domain_records_preserve_legacy_data_and_validate_registrars() {
+    let original = sample();
+    assert!(original.registrar.is_none());
+    assert!(serde_json::to_value(&original).unwrap().get("registrar").is_none());
+    let mut domain = original.clone();
+    domain.category = "domain".into();
+    domain.name = "example.com".into();
+    domain.registrar = Some("Example Registrar".into());
+    domain.validate().unwrap();
+    let (dir, store) = store();
+    store.save(domain.clone(), 0).unwrap();
+    assert_eq!(store.read().unwrap().0.subscriptions[0], domain);
+    assert!(dir.path().join("subscriptions.json.bak").exists());
+    for name in ["https://example.com", "example.com/path", "127.0.0.1", "-bad.com", "a..com"] {
+        domain.name = name.into();
+        assert!(domain.validate().is_err(), "{name}");
+    }
+    domain.name = "例子.中国".into();
+    domain.validate().unwrap();
+    domain.kind = "lifetime".into();
+    assert!(domain.validate().is_err());
+}

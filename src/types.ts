@@ -4,6 +4,7 @@ export interface Subscription {
   serviceId: string | null;
   category: string;
   plan: string;
+  registrar?: string | null;
   icon: string | null;
   amount: string;
   currency: string;

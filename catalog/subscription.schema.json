@@ -15,6 +15,11 @@
     "category": {
       "type": "string"
     },
+    "registrar": {
+      "type": ["string", "null"],
+      "maxLength": 200,
+      "description": "Optional domain registrar; domain name is stored in name"
+    },
     "plan": {
       "type": "string"
     },

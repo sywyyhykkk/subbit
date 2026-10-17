@@ -207,10 +207,14 @@ impl CatalogCache {
             state.catalog.validate()?;
             Ok(state)
         })();
-        cached.unwrap_or_else(|_| CatalogState {
+        let mut state = cached.unwrap_or_else(|_| CatalogState {
             catalog: bundled(),
             updated_at: None,
-        })
+        });
+        if !state.catalog.categories.iter().any(|c| c["id"] == "domain") {
+            state.catalog.categories.push(serde_json::json!({"id":"domain","zh":"域名","en":"Domains","icon":"◎"}));
+        }
+        state
     }
     pub fn refresh(&self, force: bool) -> Result<CatalogState> {
         self.refresh_from(force, URL)

@@ -41,7 +41,7 @@
   let directory: CatalogState = $state({ catalog: { schemaVersion: 1, categories: bundledCategories, services: bundledServices, icons: {} }, updatedAt: null });
   let pendingDirectory: CatalogState | null = $state(null);
   let catalogBusy = $state(false), catalogError = $state(false);
-  const categories = $derived(directory.catalog.categories);
+  const categories = $derived(directory.catalog.categories.some((c) => c.id === "domain") ? directory.catalog.categories : [...directory.catalog.categories, bundledCategories.find((c) => c.id === "domain")!]);
   const services = $derived(directory.catalog.services);
   const serviceIcon = (id: string | null) => {
     const service = services.find((s) => s.id === id);
@@ -101,7 +101,7 @@
       (s) =>
         (category === "all" || s.category === category) &&
         (filter === "all" || s.kind === filter) &&
-        `${s.name} ${s.plan} ${s.notes}`
+        `${s.name} ${s.plan} ${s.registrar ?? ""} ${s.notes}`
           .toLowerCase()
           .includes(search.toLowerCase()),
     ).sort((a, b) => {
@@ -131,7 +131,7 @@
   );
   const customServices = $derived(
     entries.filter((s) =>
-      !s.serviceId &&
+      !s.serviceId && s.category !== "domain" &&
       (pickerCategory === "all" || s.category === pickerCategory) &&
       s.name.toLowerCase().includes(pickerSearch.toLowerCase()),
     ).filter((s, i, all) => all.findIndex((x) => x.name === s.name) === i),
@@ -336,6 +336,7 @@
       record.name = pickerSearch;
       record.category = pickerCategory === "all" ? "other" : pickerCategory;
     }
+    if (record.category === "domain") { record.cycleUnit = "year"; record.registrar = ""; }
     updateExpiry();
     modal = "editor";
   }
@@ -351,6 +352,14 @@
     if (record.kind === "recurring" && !record.expiresAt) updateExpiry();
     editRevision = snap!.database.revision;
     modal = "editor";
+  }
+  function changeCategory() {
+    if (record.category === "domain") {
+      record.kind = "recurring"; record.cycleUnit = "year"; record.cycleCount = 1;
+      record.serviceId = null; planPresetId = ""; autoPrice = false;
+      record.registrar ??= "";
+      setKind();
+    }
   }
   function setKind() {
     if (record.kind === "lifetime") {
@@ -394,6 +403,7 @@
         }
       }
       payload.name = payload.name.trim();
+      payload.registrar = payload.registrar?.trim() || undefined;
       payload.expiresAt = payload.expiresAt || null;
       // Keep the original start-date anchor for month ends and leap years.
       if (payload.autoRenew && payload.expiresAt === nextCycle(payload.purchasedAt, payload.cycleUnit, payload.cycleCount)) payload.expiresAt = null;
@@ -737,7 +747,7 @@
                 >{#if item.icon || serviceIcon(item.serviceId)}<img
                     src={item.icon || serviceIcon(item.serviceId)}
                     alt=""
-                  />{:else}<span
+                  />{:else if item.category === "domain"}<Icon name="globe" size={28}/>{:else}<span
                     >{item.category === "vpn"
                       ? "⌁"
                       : item.name.slice(0, 1)}</span
@@ -751,7 +761,7 @@
                       : categoryName(item.category)}</span
                   ></strong
                 ><span class="asset-meta"
-                  >{item.plan || tr("自定义套餐", "Custom plan")} · {item.currency}
+                  >{item.category === "domain" ? (item.registrar ? `${item.registrar} · ` : "") : `${item.plan || tr("自定义套餐", "Custom plan")} · `}{item.currency}
                   {item.amount}{item.kind === "recurring"
                     ? ` / ${item.cycleCount > 1 ? item.cycleCount : ""}${unitLabel(item.cycleUnit)}`
                     : ""}</span
@@ -893,7 +903,7 @@
               >{#if record.icon || serviceIcon(record.serviceId)}<img
                   src={record.icon || serviceIcon(record.serviceId)}
                   alt=""
-                />{:else}{record.category === "vpn"
+                />{:else if record.category === "domain"}<Icon name="globe" size={28}/>{:else}{record.category === "vpn"
                   ? "⌁"
                   : record.name.slice(0, 1) || "＋"}{/if}</span
             ><input
@@ -903,22 +913,23 @@
               onchange={(e) => uploadIcon(e.currentTarget.files?.[0])}
             /><small>{labels.changeIcon}</small></label
           ><label class="grow"
-            >{tr("名称", "Name")}<input
+            >{record.category === "domain" ? tr("域名", "Domain") : tr("名称", "Name")}<input
               required
               maxlength="100"
               bind:value={record.name}
-              placeholder={tr("服务或软件名称", "Service or software name")}
+              placeholder={record.category === "domain" ? "example.com" : tr("服务或软件名称", "Service or software name")}
             /></label
           >
         </div>
         <div class="form-grid">
           <label
-            >{tr("分类", "Category")}<select bind:value={record.category}
+            >{tr("分类", "Category")}<select bind:value={record.category} onchange={changeCategory}
               >{#if !categories.some((c) => c.id === record.category)}<option value={record.category}>{record.category}</option>{/if}{#each categories as c}<option value={c.id}
                   >{en ? c.en : c.zh}</option
                 >{/each}</select
             ></label
           ><div class="plan-field">
+            {#if record.category === "domain"}<label>{tr("域名管理商", "Registrar")}<input bind:value={record.registrar} maxlength="200" list="registrars" placeholder={tr("输入管理商名称", "Enter registrar name")}/><datalist id="registrars">{#each [...new Set(entries.filter((s) => s.category === "domain" && s.registrar).map((s) => s.registrar!))] as registrar}<option value={registrar}></option>{/each}</datalist></label>{:else}
             {#if selectedService}<label>
               {tr("套餐", "Plan")}
               <select bind:value={planPresetId} onchange={(e) => { planPresetId = e.currentTarget.value; applyPlan(selectedService?.plans.find((p) => p.id === planPresetId)); }}>
@@ -932,6 +943,7 @@
               {tr("自定义套餐", "Custom plan")}
               <input bind:value={record.plan} placeholder={tr("输入套餐名称", "Enter plan name")} />
             </label>{/if}
+            {/if}
           </div>
         </div>
         <fieldset class="kind-choice">
@@ -950,6 +962,7 @@
             ><input
               type="radio"
               value="lifetime"
+              disabled={record.category === "domain"}
               bind:group={record.kind}
               onchange={() => {
                 record.kind = "lifetime";

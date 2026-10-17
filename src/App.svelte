@@ -2,7 +2,7 @@
   import { onMount, tick } from "svelte";
   import Icon from "./Icon.svelte";
   import ReleaseNotes from "./ReleaseNotes.svelte";
-  import { localTimestamp, bytesLabel } from "./display";
+  import { localTimestamp, bytesLabel, reimbursementStatus } from "./display";
   import DatePicker from "./DatePicker.svelte";
   import { nextCycle } from "./dates";
   import { createReloadQueue } from "./reload";
@@ -637,6 +637,7 @@
       if (directory) {
         await call("move_data", { directory });
         await reload();
+        fileInfo = await call("data_file_info");
         notice = tr(
           "数据位置已切换，原文件保留",
           "Data location changed. Original file retained.",
@@ -891,7 +892,7 @@
                 ></span
               >
               <span class="asset-cost"
-                ><strong>{money(cost?.actual)}</strong>{#if item.reimbursement === "full" || (item.reimbursement === "percent" && Number(item.reimbursementValue) === 100) || (item.reimbursement === "fixed" && Number(item.amount) > 0 && Number(item.reimbursementValue) === Number(item.amount))}<small>{tr("全额报销", "Fully reimbursed")}</small>{:else if ["fixed", "percent"].includes(item.reimbursement) && Number(item.reimbursementValue) > 0}<small>{tr("部分报销", "Partly reimbursed")}</small>{/if}</span
+                ><strong>{money(cost?.actual)}</strong>{#if reimbursementStatus(item) === "full"}<small>{tr("全额报销", "Fully reimbursed")}</small>{:else if reimbursementStatus(item) === "partial"}<small>{tr("部分报销", "Partly reimbursed")}</small>{/if}</span
               ><span class="chevron"><Icon name="chevron" size={16}/></span>
             </button>{/each}
         </div>{/if}
@@ -1526,8 +1527,8 @@
         <button onclick={copyMcp}>{tr("复制连接配置", "Copy connection config")}</button>
         <p class="hint">
           {tr(
-            "可用工具：查询目录、列出资产、预览导入、批量导入、费用汇总。使用云端 Agent 时，工具返回的数据会交给该 Agent 处理。",
-            "Tools: catalog, subscriptions, import preview, batch import and cost summary. With a cloud Agent, returned data is processed by that Agent.",
+            "可用工具：查询目录、列出资产、资产导入、费用汇总，以及汇率和目录的本地预览与导入。使用云端 Agent 时，工具返回的数据会交给该 Agent 处理。",
+            "Tools: catalog, subscriptions, asset imports, cost summaries, and local exchange-rate/catalog previews and imports. With a cloud Agent, returned data is processed by that Agent.",
           )}
         </p>{/if}
     </div>

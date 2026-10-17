@@ -12,3 +12,17 @@ export function bytesLabel(value: number): string {
   if (value < 1024 * 1024) return `${(value / 1024).toFixed(1)} KB`;
   return `${(value / 1024 / 1024).toFixed(1)} MB`;
 }
+
+export function reimbursementStatus(item: { reimbursement: string; reimbursementValue: string; amount: string }): "full" | "partial" | "none" {
+  const normalized = (value: string) => {
+    const [whole, fraction = ""] = value.split(".");
+    const integer = whole.replace(/^0+(?=\d)/, "") || "0";
+    const decimals = fraction.replace(/0+$/, "");
+    return decimals ? `${integer}.${decimals}` : integer;
+  };
+  const value = normalized(item.reimbursementValue), amount = normalized(item.amount);
+  if (item.reimbursement === "full") return "full";
+  if (!["fixed", "percent"].includes(item.reimbursement) || value === "0") return "none";
+  if ((item.reimbursement === "percent" && value === "100") || (item.reimbursement === "fixed" && amount !== "0" && value === amount)) return "full";
+  return "partial";
+}

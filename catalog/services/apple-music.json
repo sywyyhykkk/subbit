@@ -3,9 +3,9 @@
   "name": "Apple Music",
   "category": "media",
   "aliases": [],
-  "icon": "/catalog/icons/apple-music.svg",
-  "iconSource": "https://simpleicons.org/",
-  "iconLicense": "CC0-1.0",
+  "icon": "/catalog/icons/apple-music.png",
+  "iconSource": "https://music.apple.com/assets/favicon/favicon-180.png",
+  "iconLicense": "Brand asset; respective owner retains rights",
   "source": "https://www.apple.com/apple-music/",
   "reviewedAt": "2026-10-16",
   "regions": [

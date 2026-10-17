@@ -3,9 +3,9 @@
   "name": "TickTick",
   "category": "productivity",
   "aliases": [],
-  "icon": "/catalog/icons/ticktick.svg",
-  "iconSource": "https://simpleicons.org/",
-  "iconLicense": "CC0-1.0",
+  "icon": "/catalog/icons/ticktick.png",
+  "iconSource": "https://d107mjio2rjf74.cloudfront.net/web/static/img/apple-touch-icon-180x180.png",
+  "iconLicense": "Brand asset; respective owner retains rights",
   "source": "https://ticktick.com/upgrade",
   "reviewedAt": "2026-10-16",
   "regions": [

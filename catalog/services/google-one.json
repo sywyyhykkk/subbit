@@ -3,9 +3,9 @@
   "name": "Google One",
   "category": "storage",
   "aliases": [],
-  "icon": "/catalog/icons/google-one.svg",
-  "iconSource": "https://simpleicons.org/",
-  "iconLicense": "CC0-1.0",
+  "icon": "/catalog/icons/google-one.png",
+  "iconSource": "https://one.google.com/about/public/favicon-32x32.png",
+  "iconLicense": "Brand asset; respective owner retains rights",
   "source": "https://one.google.com/about/plans",
   "reviewedAt": "2026-10-17",
   "regions": [

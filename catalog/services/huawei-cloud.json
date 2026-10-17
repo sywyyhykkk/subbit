@@ -9,6 +9,7 @@
   ],
   "icon": "/catalog/icons/huawei-cloud.svg",
   "iconSource": "https://github.com/simple-icons/simple-icons/blob/16.35.0/icons/huawei.svg",
+  "iconColorSource": "https://www.huaweicloud.com/favicon.ico",
   "iconLicense": "CC0-1.0",
   "source": "https://www.huaweicloud.com/intl/en-us/product/ecs.html",
   "reviewedAt": "2026-10-17",

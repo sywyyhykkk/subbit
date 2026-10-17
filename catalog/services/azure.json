@@ -8,8 +8,8 @@
     "Virtual Machines"
   ],
   "icon": "/catalog/icons/azure.svg",
-  "iconSource": "Local letter placeholder",
-  "iconLicense": "MIT",
+  "iconSource": "https://arch-center.azureedge.net/icons/Azure_Public_Service_Icons_V24.zip",
+  "iconLicense": "Brand asset; respective owner retains rights",
   "source": "https://azure.microsoft.com/en-us/products/virtual-machines",
   "reviewedAt": "2026-10-17",
   "regions": [

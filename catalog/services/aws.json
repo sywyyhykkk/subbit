@@ -8,9 +8,9 @@
     "EC2",
     "Lightsail"
   ],
-  "icon": "/catalog/icons/aws.svg",
-  "iconSource": "Local letter placeholder",
-  "iconLicense": "MIT",
+  "icon": "/catalog/icons/aws.png",
+  "iconSource": "https://a0.awsstatic.com/libra-css/images/site/touch-icon-ipad-144-smile.png",
+  "iconLicense": "Brand asset; respective owner retains rights",
   "source": "https://aws.amazon.com/lightsail/pricing/",
   "reviewedAt": "2026-10-17",
   "regions": [

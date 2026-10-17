@@ -6,9 +6,9 @@
     "OVH",
     "VPS"
   ],
-  "icon": "/catalog/icons/ovhcloud.svg",
-  "iconSource": "https://github.com/simple-icons/simple-icons/blob/16.35.0/icons/ovh.svg",
-  "iconLicense": "CC0-1.0",
+  "icon": "/catalog/icons/ovhcloud.png",
+  "iconSource": "https://www.ovhcloud.com/favicon.ico",
+  "iconLicense": "Brand asset; respective owner retains rights",
   "source": "https://www.ovhcloud.com/en/vps/",
   "reviewedAt": "2026-10-17",
   "regions": [

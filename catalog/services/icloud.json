@@ -3,9 +3,9 @@
   "name": "iCloud+",
   "category": "storage",
   "aliases": [],
-  "icon": "/catalog/icons/icloud.svg",
-  "iconSource": "https://simpleicons.org/",
-  "iconLicense": "CC0-1.0",
+  "icon": "/catalog/icons/icloud.png",
+  "iconSource": "https://www.icloud.com/favicon.ico",
+  "iconLicense": "Brand asset; respective owner retains rights",
   "source": "https://www.apple.com/icloud/",
   "reviewedAt": "2026-10-16",
   "regions": [

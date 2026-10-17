@@ -8,9 +8,9 @@
     "Compute Engine",
     "GCE"
   ],
-  "icon": "/catalog/icons/google-cloud.svg",
-  "iconSource": "https://github.com/simple-icons/simple-icons/blob/16.35.0/icons/googlecloud.svg",
-  "iconLicense": "CC0-1.0",
+  "icon": "/catalog/icons/google-cloud.png",
+  "iconSource": "https://www.gstatic.com/cgc/super_cloud_gradient.png",
+  "iconLicense": "Brand asset; respective owner retains rights",
   "source": "https://cloud.google.com/compute/all-pricing",
   "reviewedAt": "2026-10-17",
   "regions": [

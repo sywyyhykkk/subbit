@@ -111,8 +111,8 @@ fn apply_appearance(app: tauri::AppHandle, theme: String, dark: bool) -> Result<
         use objc2_app_kit::{NSApplication, NSImage};
         use objc2_foundation::NSData;
         if let Some(mtm) = MainThreadMarker::new() {
-            let bytes: &[u8] = if dark { include_bytes!("../../design/icons/subbit-dark.png") }
-                else { include_bytes!("../../design/icons/subbit-light.png") };
+            let bytes: &[u8] = if dark { include_bytes!("../icons/app-dark.png") }
+                else { include_bytes!("../icons/app-light.png") };
             if let Some(icon) = NSImage::initWithData(NSImage::alloc(), &NSData::with_bytes(bytes)) {
                 unsafe { NSApplication::sharedApplication(mtm).setApplicationIconImage(Some(&icon)); }
             }
@@ -120,8 +120,8 @@ fn apply_appearance(app: tauri::AppHandle, theme: String, dark: bool) -> Result<
     }).map_err(|e| e.to_string())?;
     #[cfg(not(target_os = "macos"))]
     for window in app.webview_windows().values() {
-        let bytes: &[u8] = if dark { include_bytes!("../../design/icons/subbit-dark.png") }
-            else { include_bytes!("../../design/icons/subbit-light.png") };
+        let bytes: &[u8] = if dark { include_bytes!("../icons/app-dark.png") }
+            else { include_bytes!("../icons/app-light.png") };
         window.set_icon(tauri::image::Image::from_bytes(bytes).map_err(|e| e.to_string())?)
             .map_err(|e| e.to_string())?;
     }

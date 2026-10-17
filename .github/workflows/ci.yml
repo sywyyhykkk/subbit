@@ -34,6 +34,8 @@ jobs:
       - run: python scripts/smoke-mcp.py
       - run: npm run tauri build -- --bundles app --config '{"bundle":{"createUpdaterArtifacts":false}}'
         if: runner.os == 'macOS'
+      - run: codesign --verify --deep --strict --verbose=2 src-tauri/target/release/bundle/macos/Subbit.app
+        if: runner.os == 'macOS'
       - run: npm run tauri build -- --bundles nsis --config '{"bundle":{"createUpdaterArtifacts":false}}'
         if: runner.os == 'Windows'
       - uses: actions/upload-artifact@v4

@@ -78,12 +78,17 @@ jobs:
           trap 'hdiutil detach "$mount"' EXIT
           test "$(lipo "$mount/Subbit.app/Contents/MacOS/subbit" -archs)" = "${{ matrix.arch }}"
           test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$mount/Subbit.app/Contents/Info.plist")" = "$version"
+          codesign --verify --deep --strict --verbose=2 "$mount/Subbit.app"
+          codesign -dv --verbose=2 "$mount/Subbit.app"
           python3 scripts/smoke-mcp.py "$mount/Subbit.app/Contents/MacOS/subbit"
           cp "$dmg" "artifacts/Subbit_${version}_macos-${{ matrix.arch }}.dmg"
           updater=$(find src-tauri/target/release/bundle/macos -name '*.app.tar.gz' -print -quit)
           test -s "$updater.sig"
           cp "$updater" "artifacts/Subbit_${version}_macos-${{ matrix.arch }}.app.tar.gz"
           cp "$updater.sig" "artifacts/Subbit_${version}_macos-${{ matrix.arch }}.app.tar.gz.sig"
+          mkdir "$RUNNER_TEMP/subbit-update-check"
+          tar -xzf "$updater" -C "$RUNNER_TEMP/subbit-update-check"
+          codesign --verify --deep --strict --verbose=2 "$RUNNER_TEMP/subbit-update-check/Subbit.app"
       - name: Build Windows installer
         if: runner.os == 'Windows'
         run: npm run tauri build -- --bundles nsis
@@ -145,6 +150,12 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           version=$(node -p "require('./package.json').version")
-          gh release create "$GITHUB_REF_NAME" artifacts/* \
-            --verify-tag --latest --title "Subbit $GITHUB_REF_NAME" \
-            --notes-file "docs/releases/${version}.md"
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            # Replace rebuilt packages without editing the existing announcement.
+            gh release upload "$GITHUB_REF_NAME" artifacts/*.dmg artifacts/*.exe artifacts/*.tar.gz artifacts/*.sig --clobber
+            gh release upload "$GITHUB_REF_NAME" artifacts/latest.json --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" artifacts/* \
+              --verify-tag --latest --title "Subbit $GITHUB_REF_NAME" \
+              --notes-file "docs/releases/${version}.md"
+          fi

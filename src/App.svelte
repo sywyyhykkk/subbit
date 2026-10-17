@@ -8,8 +8,8 @@
   import { check, type Update } from "@tauri-apps/plugin-updater";
   import { relaunch } from "@tauri-apps/plugin-process";
   import appInfo from "../package.json";
-  import appLight from "../design/icons/subbit-light.png";
-  import appDark from "../design/icons/subbit-dark.png";
+  import appLight from "../src-tauri/icons/about-light.png";
+  import appDark from "../src-tauri/icons/about-dark.png";
   import { presetQuote } from "./pricing";
   import { invoke, isTauri } from "@tauri-apps/api/core";
   import { listen } from "@tauri-apps/api/event";

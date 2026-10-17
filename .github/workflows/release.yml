@@ -4,6 +4,11 @@ on:
   push:
     tags: ['v*']
   workflow_dispatch:
+    inputs:
+      source_ref:
+        description: Existing tag or commit to rebuild (blank uses this ref)
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -13,18 +18,23 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-14, windows-latest]
+        include:
+          - os: macos-14
+            arch: arm64
+          - os: macos-15-intel
+            arch: x86_64
+          - os: windows-latest
+            arch: x64
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source_ref || github.ref }}
       - uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: npm
       - uses: dtolnay/rust-toolchain@stable
-      - name: Install universal macOS targets
-        if: runner.os == 'macOS'
-        run: rustup target add aarch64-apple-darwin x86_64-apple-darwin
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: src-tauri -> target
@@ -48,24 +58,24 @@ jobs:
           JS
       - run: npm run build
       - run: cargo test --locked --manifest-path src-tauri/Cargo.toml
-      - name: Build universal DMG
+      - name: Build architecture-specific DMG
         if: runner.os == 'macOS'
-        run: npm run tauri build -- --target universal-apple-darwin --bundles dmg
+        run: npm run tauri build -- --bundles dmg
       - name: Verify DMG contents and packaged MCP
         if: runner.os == 'macOS'
         shell: bash
         run: |
           version=$(node -p "require('./package.json').version")
-          dmg=$(find src-tauri/target/universal-apple-darwin/release/bundle/dmg -name '*.dmg' -print -quit)
+          dmg=$(find src-tauri/target/release/bundle/dmg -name '*.dmg' -print -quit)
           hdiutil verify "$dmg"
           mount="$RUNNER_TEMP/subbit-dmg"
           mkdir -p "$mount" artifacts
           hdiutil attach "$dmg" -readonly -nobrowse -mountpoint "$mount"
           trap 'hdiutil detach "$mount"' EXIT
-          lipo "$mount/Subbit.app/Contents/MacOS/subbit" -verify_arch arm64 x86_64
+          test "$(lipo "$mount/Subbit.app/Contents/MacOS/subbit" -archs)" = "${{ matrix.arch }}"
           test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$mount/Subbit.app/Contents/Info.plist")" = "$version"
           python3 scripts/smoke-mcp.py "$mount/Subbit.app/Contents/MacOS/subbit"
-          cp "$dmg" "artifacts/Subbit_${version}_macos-universal.dmg"
+          cp "$dmg" "artifacts/Subbit_${version}_macos-${{ matrix.arch }}.dmg"
       - name: Build Windows installer
         if: runner.os == 'Windows'
         run: npm run tauri build -- --bundles nsis
@@ -117,11 +127,11 @@ jobs:
           pattern: installer-*
           merge-multiple: true
           path: artifacts
-      - name: Create release draft with both verified installers
+      - name: Create release draft with all three verified installers
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          test "$(find artifacts -type f | wc -l)" -eq 2
+          test "$(find artifacts -type f | wc -l)" -eq 3
           gh release create "$GITHUB_REF_NAME" artifacts/*.dmg artifacts/*.exe \
             --verify-tag --draft --title "Subbit $GITHUB_REF_NAME" \
             --notes-file docs/releases/0.0.1.md

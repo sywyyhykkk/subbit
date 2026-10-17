@@ -8,8 +8,11 @@
 
 下载 [Subbit 0.0.1 正式版](https://github.com/sywyyhykkk/subbit/releases/tag/v0.0.1)：
 
-- [macOS 通用 DMG](https://github.com/sywyyhykkk/subbit/releases/download/v0.0.1/Subbit_0.0.1_macos-universal.dmg)：支持 macOS 12+、Apple Silicon 和 Intel。打开 DMG，将 Subbit 拖入 Applications。
+- [macOS Apple Silicon DMG](https://github.com/sywyyhykkk/subbit/releases/download/v0.0.1/Subbit_0.0.1_macos-arm64.dmg)：macOS 12+，Apple M 系列芯片。
+- [macOS Intel DMG](https://github.com/sywyyhykkk/subbit/releases/download/v0.0.1/Subbit_0.0.1_macos-x86_64.dmg)：macOS 12+，Intel 处理器。
 - [Windows x64 安装 EXE](https://github.com/sywyyhykkk/subbit/releases/download/v0.0.1/Subbit_0.0.1_windows-x64-setup.exe)：支持 Windows 10/11、Intel/AMD 64 位。运行安装程序，再从开始菜单启动。
+
+Mac 可在苹果菜单 → 关于本机中查看芯片类型，选择对应的 DMG，打开后将 Subbit 拖入 Applications。
 
 无需开发环境。Windows 缺少 WebView2 时会联网安装；请下载安装包，而不是 GitHub 自动生成的 Source code 源码压缩包。此版本尚无发布者签名及 Apple 公证，首次启动可能出现 Gatekeeper 或 SmartScreen 提示。安装条件和验证范围见 [发布说明](docs/releases/0.0.1.md)。
 

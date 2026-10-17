@@ -1,8 +1,8 @@
 [package]
 name = "subbit"
-version = "0.0.1"
+version = "0.0.2"
 description = "A small, local-first subscription companion"
-authors = ["sywyyhykkk"]
+authors = ["mango"]
 edition = "2021"
 license = "MIT"
 
@@ -28,6 +28,9 @@ fs2 = "0.4"
 tempfile = "3"
 uuid = { version = "1", features = ["v4"] }
 reqwest = { version = "0.12", default-features = false, features = ["blocking", "json", "rustls-tls"] }
+tauri-plugin-opener = "2"
+tauri-plugin-updater = "2"
+tauri-plugin-process = "2"
 
 [profile.release]
 codegen-units = 1
@@ -35,3 +38,8 @@ lto = true
 opt-level = "s"
 panic = "abort"
 strip = true
+
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2 = "0.6"
+objc2-app-kit = { version = "0.3", default-features = false, features = ["std", "NSApplication", "NSImage"] }
+objc2-foundation = { version = "0.3", default-features = false, features = ["std", "NSData"] }

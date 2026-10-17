@@ -217,15 +217,13 @@ impl Default for Settings {
             language: "system".into(),
             theme: "system".into(),
             currency_symbol: true,
-            show_level: false,
+            show_level: true,
             level_basis: "actual".into(),
             mcp_enabled: false,
             auto_rates: true,
             fixed_rates: BTreeMap::new(),
-            levels: vec![Level {
-                above: "100".into(),
-                name: "数字土豪".into(),
-            }],
+            levels: [("0", "订阅萌新"), ("100", "数字玩家"), ("300", "效率达人"), ("600", "云端收藏家"), ("1000", "数字土豪")]
+                .into_iter().map(|(above, name)| Level { above: above.into(), name: name.into() }).collect(),
         }
     }
 }
@@ -291,6 +289,17 @@ impl Default for Database {
     }
 }
 impl Database {
+    pub fn spending_level(&self, now: NaiveDate) -> Result<Option<String>> {
+        if !self.settings.show_level { return Ok(None); }
+        let summary = self.summary("CNY", "month", now)?;
+        // Calculated totals can have more than the 12 decimal places allowed for user input.
+        let value = summary[&self.settings.level_basis].as_str()
+            .and_then(|s| s.parse::<Decimal>().ok());
+        Ok(value.and_then(|value| self.settings.levels.iter()
+            .filter(|level| decimal(&level.above).is_ok_and(|threshold| value >= threshold))
+            .max_by_key(|level| decimal(&level.above).unwrap_or_default())
+            .map(|level| level.name.clone())))
+    }
     pub fn validate(&self) -> Result<()> {
         if self.schema_version != 1 {
             return Err("Unsupported data version".into());

@@ -6,15 +6,17 @@
 
 ## 下载与安装
 
-下载 [Subbit 0.0.1 正式版](https://github.com/sywyyhykkk/subbit/releases/tag/v0.0.1)：
+下载 [Subbit 0.0.2 正式版](https://github.com/sywyyhykkk/subbit/releases/tag/v0.0.2)：
 
-- [macOS Apple Silicon DMG](https://github.com/sywyyhykkk/subbit/releases/download/v0.0.1/Subbit_0.0.1_macos-arm64.dmg)：macOS 12+，Apple M 系列芯片。
-- [macOS Intel DMG](https://github.com/sywyyhykkk/subbit/releases/download/v0.0.1/Subbit_0.0.1_macos-x86_64.dmg)：macOS 12+，Intel 处理器。
-- [Windows x64 安装 EXE](https://github.com/sywyyhykkk/subbit/releases/download/v0.0.1/Subbit_0.0.1_windows-x64-setup.exe)：支持 Windows 10/11、Intel/AMD 64 位。运行安装程序，再从开始菜单启动。
+- [macOS Apple Silicon DMG](https://github.com/sywyyhykkk/subbit/releases/download/v0.0.2/Subbit_0.0.2_macos-arm64.dmg)：macOS 12+，Apple M 系列芯片。
+- [macOS Intel DMG](https://github.com/sywyyhykkk/subbit/releases/download/v0.0.2/Subbit_0.0.2_macos-x86_64.dmg)：macOS 12+，Intel 处理器。
+- [Windows x64 安装 EXE](https://github.com/sywyyhykkk/subbit/releases/download/v0.0.2/Subbit_0.0.2_windows-x64-setup.exe)：支持 Windows 10/11、Intel/AMD 64 位。运行安装程序，再从开始菜单启动。
 
 Mac 可在苹果菜单 → 关于本机中查看芯片类型，选择对应的 DMG，打开后将 Subbit 拖入 Applications。
 
-无需开发环境。Windows 缺少 WebView2 时会联网安装；请下载安装包，而不是 GitHub 自动生成的 Source code 源码压缩包。此版本尚无发布者签名及 Apple 公证，首次启动可能出现 Gatekeeper 或 SmartScreen 提示。安装条件和验证范围见 [发布说明](docs/releases/0.0.1.md)。
+无需开发环境。Windows 缺少 WebView2 时会联网安装；请下载安装包，而不是 GitHub 自动生成的 Source code 源码压缩包。此版本尚无发布者签名及 Apple 公证，首次启动可能出现 Gatekeeper 或 SmartScreen 提示。安装条件和验证范围见 [发布说明](docs/releases/0.0.2.md)。
+
+从 0.0.1 升级需手动安装一次 0.0.2；此后可在 **设置 → 关于 → 检查更新** 中下载、安装并重启。
 
 ## 功能
 
@@ -45,11 +47,12 @@ npm run tauri dev
 npm run check
 npm run catalog:check
 npm run test:pricing
+npm run test:dates
 npm run build
 cargo test --locked --manifest-path src-tauri/Cargo.toml
 cargo build --locked --manifest-path src-tauri/Cargo.toml
 python3 scripts/smoke-mcp.py
-npm run tauri build
+npm run tauri build -- --config '{"bundle":{"createUpdaterArtifacts":false}}'
 ```
 
 ## 费用口径
@@ -97,6 +100,8 @@ Subbit 内置本地 MCP 服务，让支持 MCP 的 Agent 读取订阅、汇总�
 
 ## 安装包
 
-安装包位于 `src-tauri/target/release/bundle/`。macOS 开发包未经过 Apple 开发者签名和公证。Windows 使用系统 WebView2，缺少时由安装程序下载，不捆绑离线浏览器。应用图标暂用占位图标。
+Tag 发布流程通过 GitHub Actions 的 `TAURI_SIGNING_PRIVATE_KEY` Secret 签署更新包并发布 `latest.json`。签名私钥应在仓库外独立备份。
+
+安装包位于 `src-tauri/target/release/bundle/`。macOS 开发包未经过 Apple 开发者签名和公证。Windows 使用系统 WebView2，缺少时由安装程序下载，不捆绑离线浏览器。应用图标使用 Subbit 专属「账单兔」。
 
 [完整开发说明与存储约定](README.md) · [MCP 接入](docs/MCP.md) · [增加服务 / 分类](catalog/CONTRIBUTING.md) · [MIT License](LICENSE)

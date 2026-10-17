@@ -65,16 +65,25 @@ export const paymentMethods = [
   ["crypto", "加密货币", "Cryptocurrency"],
   ["other", "其他", "Other"],
 ];
+export function defaultLevels(en = false) {
+  return [
+    { above: "0", name: en ? "Subscription Newcomer" : "订阅萌新" },
+    { above: "100", name: en ? "Digital Explorer" : "数字玩家" },
+    { above: "300", name: en ? "Productivity Pro" : "效率达人" },
+    { above: "600", name: en ? "Cloud Collector" : "云端收藏家" },
+    { above: "1000", name: en ? "Digital Tycoon" : "数字土豪" },
+  ];
+}
 export const defaultSettings = {
   currency: "CNY",
   period: "month",
   language: "system",
   theme: "system",
   currencySymbol: true,
-  showLevel: false,
+  showLevel: true,
   levelBasis: "actual",
   mcpEnabled: false,
   autoRates: true,
   fixedRates: {},
-  levels: [{ above: "100", name: "数字土豪" }],
+  levels: defaultLevels(),
 };

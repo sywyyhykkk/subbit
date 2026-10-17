@@ -37,6 +37,24 @@ fn yearly_reimbursement_and_hourly_cost() {
     );
 }
 #[test]
+fn spending_levels_accept_converted_totals_and_respect_basis_and_thresholds() {
+    let mut db = Database::default();
+    let mut s = sample();
+    s.amount = "20".into(); s.currency = "USD".into(); s.cycle_unit = "month".into();
+    s.reimbursement = "none".into(); s.reimbursement_value = "0".into();
+    db.settings.fixed_rates.insert("CNY".into(), "0.14".into());
+    db.subscriptions.push(s);
+    assert_eq!(db.spending_level(day("2026-10-17")).unwrap().as_deref(), Some("数字玩家"));
+    db.subscriptions[0].amount = "14".into();
+    assert_eq!(db.spending_level(day("2026-10-17")).unwrap().as_deref(), Some("数字玩家"));
+    db.subscriptions[0].reimbursement = "full".into();
+    assert_eq!(db.spending_level(day("2026-10-17")).unwrap().as_deref(), Some("订阅萌新"));
+    db.settings.level_basis = "bill".into();
+    assert_eq!(db.spending_level(day("2026-10-17")).unwrap().as_deref(), Some("数字玩家"));
+    db.settings.show_level = false;
+    assert_eq!(db.spending_level(day("2026-10-17")).unwrap(), None);
+}
+#[test]
 fn renewal_preserves_original_month_end() {
     let mut s = sample();
     s.cycle_unit = "month".into();

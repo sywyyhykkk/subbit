@@ -26,6 +26,9 @@ jobs:
           - os: windows-latest
             arch: x64
     runs-on: ${{ matrix.os }}
+    env:
+      TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+      TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ''
     steps:
       - uses: actions/checkout@v4
         with:
@@ -42,6 +45,7 @@ jobs:
       - run: npm run check
       - run: npm run catalog:check
       - run: npm run test:pricing
+      - run: npm run test:dates
       - name: Check release version
         shell: bash
         run: |
@@ -60,7 +64,7 @@ jobs:
       - run: cargo test --locked --manifest-path src-tauri/Cargo.toml
       - name: Build architecture-specific DMG
         if: runner.os == 'macOS'
-        run: npm run tauri build -- --bundles dmg
+        run: npm run tauri build -- --bundles app,dmg
       - name: Verify DMG contents and packaged MCP
         if: runner.os == 'macOS'
         shell: bash
@@ -76,6 +80,10 @@ jobs:
           test "$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$mount/Subbit.app/Contents/Info.plist")" = "$version"
           python3 scripts/smoke-mcp.py "$mount/Subbit.app/Contents/MacOS/subbit"
           cp "$dmg" "artifacts/Subbit_${version}_macos-${{ matrix.arch }}.dmg"
+          updater=$(find src-tauri/target/release/bundle/macos -name '*.app.tar.gz' -print -quit)
+          test -s "$updater.sig"
+          cp "$updater" "artifacts/Subbit_${version}_macos-${{ matrix.arch }}.app.tar.gz"
+          cp "$updater.sig" "artifacts/Subbit_${version}_macos-${{ matrix.arch }}.app.tar.gz.sig"
       - name: Build Windows installer
         if: runner.os == 'Windows'
         run: npm run tauri build -- --bundles nsis
@@ -108,13 +116,14 @@ jobs:
           }
           New-Item -ItemType Directory -Force artifacts | Out-Null
           Copy-Item $installer.FullName "artifacts/Subbit_${version}_windows-x64-setup.exe"
+          Copy-Item ($installer.FullName + '.sig') "artifacts/Subbit_${version}_windows-x64-setup.exe.sig"
       - uses: actions/upload-artifact@v4
         with:
           name: installer-${{ matrix.os }}
           path: artifacts/*
           if-no-files-found: error
 
-  draft-release:
+  publish-release:
     if: github.ref_type == 'tag'
     needs: build
     runs-on: ubuntu-latest
@@ -127,11 +136,15 @@ jobs:
           pattern: installer-*
           merge-multiple: true
           path: artifacts
-      - name: Create release draft with all three verified installers
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: node scripts/release-manifest.mjs artifacts
+      - name: Publish all installers and signed update bundles
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          test "$(find artifacts -type f | wc -l)" -eq 3
-          gh release create "$GITHUB_REF_NAME" artifacts/*.dmg artifacts/*.exe \
-            --verify-tag --draft --title "Subbit $GITHUB_REF_NAME" \
-            --notes-file docs/releases/0.0.1.md
+          version=$(node -p "require('./package.json').version")
+          gh release create "$GITHUB_REF_NAME" artifacts/* \
+            --verify-tag --latest --title "Subbit $GITHUB_REF_NAME" \
+            --notes-file "docs/releases/${version}.md"

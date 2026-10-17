@@ -1,6 +1,15 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import Icon from "./Icon.svelte";
+  import DatePicker from "./DatePicker.svelte";
+  import { nextCycle } from "./dates";
+  import { getVersion } from "@tauri-apps/api/app";
+  import { openUrl } from "@tauri-apps/plugin-opener";
+  import { check, type Update } from "@tauri-apps/plugin-updater";
+  import { relaunch } from "@tauri-apps/plugin-process";
+  import appInfo from "../package.json";
+  import appLight from "../design/icons/subbit-light.png";
+  import appDark from "../design/icons/subbit-dark.png";
   import { presetQuote } from "./pricing";
   import { invoke, isTauri } from "@tauri-apps/api/core";
   import { listen } from "@tauri-apps/api/event";
@@ -14,6 +23,7 @@
     currencyNames,
     paymentMethods,
     defaultSettings,
+    defaultLevels,
   } from "./catalog";
   import type {
     Subscription,
@@ -34,6 +44,12 @@
     category = $state("all"),
     search = $state(""),
     filter = $state("all");
+  let sortBy = $state("added"), sortOrder = $state("desc");
+  let version = $state(appInfo.version);
+  let update: Update | null = $state(null);
+  let updateState = $state<"idle" | "checking" | "available" | "current" | "downloading" | "installed" | "error">("idle");
+  let updateError = $state(""), downloaded = $state(0), downloadTotal = $state(0);
+  let systemDark = $state(window.matchMedia("(prefers-color-scheme: dark)").matches);
   let modal = $state<"" | "picker" | "editor" | "settings">("");
   let pickerSearch = $state(""),
     pickerCategory = $state("all");
@@ -49,12 +65,10 @@
     rateValue = $state("");
   let preview: Database | null = $state(null);
   let inputDialog: HTMLDialogElement;
-  const en = $derived.by(
-    () =>
-      snap?.database.settings.language === "en" ||
-      (snap?.database.settings.language !== "zh" &&
-        navigator.language.startsWith("en")),
-  );
+  const activeLanguage = $derived.by(() => modal === "settings" ? prefs.language : snap?.database.settings.language ?? "system");
+  const en = $derived(activeLanguage === "en" || (activeLanguage === "system" && !navigator.language.toLowerCase().startsWith("zh")));
+  const activeTheme = $derived.by(() => modal === "settings" ? prefs.theme : snap?.database.settings.theme ?? "system");
+  const dark = $derived(activeTheme === "dark" || (activeTheme === "system" && systemDark));
   const tr = (zh: string, english: string) => (en ? english : zh);
   const labels = $derived({
     addAsset: tr("新增资产", "Add asset"),
@@ -66,16 +80,26 @@
     ratesUpdated: tr("汇率已更新", "Exchange rates updated"),
   });
   const entries = $derived.by(() => snap?.database.subscriptions ?? []);
-  const filtered = $derived(
-    entries.filter(
+  const filtered = $derived.by(() => {
+    const rows = new Map(snap?.summary.rows.map((r) => [r.id, r.actual]));
+    return entries.filter(
       (s) =>
         (category === "all" || s.category === category) &&
         (filter === "all" || s.kind === filter) &&
         `${s.name} ${s.plan} ${s.notes}`
           .toLowerCase()
           .includes(search.toLowerCase()),
-    ),
-  );
+    ).sort((a, b) => {
+      if (sortBy === "price") {
+        const av = rows.get(a.id), bv = rows.get(b.id);
+        if (av == null || bv == null) return av == null ? (bv == null ? 0 : 1) : -1;
+        const diff = Number(av) - Number(bv);
+        if (diff) return sortOrder === "asc" ? diff : -diff;
+      }
+      const diff = entries.indexOf(a) - entries.indexOf(b);
+      return sortOrder === "asc" ? diff : -diff;
+    });
+  });
   const selectedService = $derived(
     services.find((s) => s.id === record.serviceId),
   );
@@ -249,7 +273,7 @@
   }
   function choose(service?: Service, custom?: Subscription) {
     record = blank();
-    record.currency = currency;
+    record.currency = en ? "USD" : "CNY";
     if (service) {
       record.name = service.name;
       record.serviceId = service.id;
@@ -269,6 +293,7 @@
       record.name = pickerSearch;
       record.category = pickerCategory === "all" ? "other" : pickerCategory;
     }
+    updateExpiry();
     modal = "editor";
   }
   function edit(s: Subscription) {
@@ -280,6 +305,7 @@
     planPresetId = services.find((service) => service.id === s.serviceId)
       ?.plans.find((p) => p.name === s.plan)?.id ?? "";
     autoPrice = false;
+    if (record.kind === "recurring" && !record.expiresAt) updateExpiry();
     editRevision = snap!.database.revision;
     modal = "editor";
   }
@@ -289,7 +315,11 @@
       record.expiresAt = null;
     } else {
       record.autoRenew = true;
+      updateExpiry();
     }
+  }
+  function updateExpiry() {
+    record.expiresAt = record.kind === "recurring" ? nextCycle(record.purchasedAt, record.cycleUnit, record.cycleCount) : null;
   }
   function applyPlan(plan: Service["plans"][number] | undefined) {
     autoPrice = !!plan;
@@ -307,6 +337,8 @@
       const payload = structuredClone($state.snapshot(record));
       payload.name = payload.name.trim();
       payload.expiresAt = payload.expiresAt || null;
+      // Keep the original start-date anchor for month ends and leap years.
+      if (payload.autoRenew && payload.expiresAt === nextCycle(payload.purchasedAt, payload.cycleUnit, payload.cycleCount)) payload.expiresAt = null;
       payload.fixedUsdRate = payload.fixedUsdRate || null;
       if (payload.kind === "lifetime") {
         payload.autoRenew = false;
@@ -372,6 +404,7 @@
     if (!snap) return;
     prefs = structuredClone($state.snapshot(snap.database.settings));
     settingsRevision = snap.database.revision;
+    if (prefs.levels.length === 1 && prefs.levels[0].above === "100" && prefs.levels[0].name === "数字土豪") prefs.levels = defaultLevels(en);
     modal = "settings";
     settingsTab = "general";
     if (isTauri())
@@ -491,10 +524,36 @@
   $effect(() => {
     if (autoPrice) record.amount = quote.status === "ready" ? quote.amount : "";
   });
+  async function external(url?: string) {
+    if (!url) return;
+    try { if (isTauri()) await openUrl(url); else window.open(url, "_blank", "noopener,noreferrer"); }
+    catch (e) { error = String(e); }
+  }
+  async function checkUpdate() {
+    if (["checking", "downloading"].includes(updateState)) return;
+    updateState = "checking"; updateError = "";
+    try {
+      if (!isTauri()) throw new Error(tr("请在桌面应用中检查更新", "Check for updates in the desktop app"));
+      await update?.close(); update = null;
+      update = await check({ timeout: 30000 });
+      updateState = update ? "available" : "current";
+    } catch (e) { updateState = "error"; updateError = String(e); }
+  }
+  async function installUpdate() {
+    if (!update || updateState !== "available") return;
+    updateState = "downloading"; downloaded = 0; downloadTotal = 0;
+    try {
+      await update.downloadAndInstall((event) => {
+        if (event.event === "Started") downloadTotal = event.data.contentLength ?? 0;
+        if (event.event === "Progress") downloaded += event.data.chunkLength;
+      });
+      updateState = "installed";
+    } catch (e) { updateState = "error"; updateError = String(e); }
+  }
   $effect(() => {
-    document.documentElement.dataset.theme =
-      snap?.database.settings.theme ?? "system";
+    document.documentElement.dataset.theme = dark ? "dark" : "light";
     document.documentElement.lang = en ? "en" : "zh-CN";
+    if (isTauri()) void call("apply_appearance", { theme: activeTheme, dark }).catch((e) => error = String(e));
   });
   $effect(() => {
     if (modal && inputDialog && !inputDialog.open) inputDialog.showModal();
@@ -503,15 +562,20 @@
   onMount(() => {
     let cleanup: (() => void)[] = [];
     let disposed = false;
+    const appearance = window.matchMedia("(prefers-color-scheme: dark)");
+    const changedAppearance = () => systemDark = appearance.matches;
+    appearance.addEventListener("change", changedAppearance);
+    if (isTauri()) void getVersion().then((v) => version = v);
     void (async () => {
       await reload(true);
-      if (new URLSearchParams(location.search).has("settings"))
-        await settings();
+      if (new URLSearchParams(location.search).has("settings")) await settings();
+      if (new URLSearchParams(location.search).has("about")) { await settings(); settingsTab = "about"; }
       if (isTauri()) {
         if (new URLSearchParams(location.search).has("add")) await picker();
-        for (const name of ["data-changed", "open-settings", "open-add"]) {
+        for (const name of ["data-changed", "open-settings", "open-add", "open-about"]) {
           const unlisten = await listen(name, () => {
-            if (name === "open-settings") void settings();
+            if (name === "open-about") void settings().then(() => settingsTab = "about");
+            else if (name === "open-settings") void settings();
             else if (name === "open-add") void picker();
             else if (!modal) void reload();
           });
@@ -533,6 +597,7 @@
     return () => {
       disposed = true;
       cleanup.forEach((f) => f());
+      appearance.removeEventListener("change", changedAppearance);
       clearInterval(interval);
       window.removeEventListener("focus", focus);
     };
@@ -542,7 +607,7 @@
 <div class:panel class="shell">
   <main>
     <header class="page-header">
-      <div class="page-title"><h1>Subbit</h1><span>{tr("数字资产", "Digital assets")}</span>{#if snap?.level}<span class="level">{snap.level}</span>{/if}</div>
+      <div class="page-title"><h1>Subbit</h1><span>{tr("数字资产", "Digital assets")}</span></div>
       <div class="header-actions">
         {#if !panel}<button class="icon-button" aria-label={tr("设置", "Settings")} title={tr("设置", "Settings")} onclick={settings}><Icon name="settings"/></button>{/if}
         <button class="primary" onclick={picker}><Icon name="plus"/>{labels.addAsset}</button>
@@ -558,6 +623,7 @@
         <div class="personal"><div class="card-label">{labels.personalCost}</div><div class="amount">{money(snap?.summary.actual)}<small>/ {unitLabel(period)}</small></div><div class="card-foot">{tr("报销后个人承担", "After reimbursement")}</div></div>
         <div class="secondary-costs"><div class="bill"><div class="card-label">{labels.billedCost}</div><div class="secondary-amount">{money(snap?.summary.bill)}</div></div><div class="reimbursed"><div class="card-label">{tr("报销抵扣", "Reimbursed")}</div><div class="secondary-amount">{money(snap?.summary.reimbursed)}</div></div></div>
       </div>
+      {#if snap?.database.settings.showLevel}<div class="spending-level"><span class="level">{snap.level ?? tr("尚未达到等级", "No level yet")}</span><span>{tr("等级依据：", "Based on: ")}{snap.database.settings.levelBasis === "bill" ? labels.billedCost : labels.personalCost} · {tr("人民币月均", "monthly CNY")}</span></div>{/if}
     </section>
     {#if snap?.summary.missingRates.length}<div class="banner warning">{tr("部分币种缺少汇率，总额暂不可用。", "Some exchange rates are missing.")}<button onclick={settings}>{tr("设置", "Settings")}</button></div>{/if}
     {#if !isTauri()}<div class="banner">{tr("界面预览 · 本地数据功能请在桌面应用中使用", "Interface preview · Local data features require the desktop app")}</div>{/if}
@@ -575,6 +641,12 @@
           </select>
           <label class="search-field"><Icon name="search" size={16}/><input class="search" aria-label={tr("搜索资产", "Search assets")} placeholder={tr("搜索资产", "Search assets")} bind:value={search}/></label>
         </div>
+      </div>
+      <div class="list-head">
+        <div class="sort-controls"><span>{tr("服务 / 套餐", "Service / Plan")}</span>
+          <select aria-label={tr("排序依据", "Sort by")} bind:value={sortBy}><option value="added">{tr("添加时间", "Date added")}</option><option value="price">{tr("价格", "Price")}</option></select>
+          <select aria-label={tr("排序方向", "Sort order")} bind:value={sortOrder}><option value="desc">{tr("降序", "Descending")}</option><option value="asc">{tr("升序", "Ascending")}</option></select>
+        </div><span>{labels.personalCost} / {unitLabel(period)}</span>
       </div>
       {#if loading}<div class="empty-state">
           {tr("正在读取本地数据…", "Loading your local data…")}
@@ -597,12 +669,7 @@
           {#if entries.length}<button onclick={() => { category = "all"; filter = "all"; search = ""; }}>{tr("清除筛选", "Clear filters")}</button>
           {:else}<button class="primary" onclick={picker}><Icon name="plus"/>{labels.addAsset}</button>{/if}
         </div>
-      {:else}<div class="list-head">
-          <span>{tr("服务 / 套餐", "Service / Plan")}</span><span
-            >{labels.personalCost} / {unitLabel(period)}</span
-          >
-        </div>
-        <div class="asset-list">
+      {:else}<div class="asset-list">
           {#each filtered as item (item.id)}{@const cost =
               snap?.summary.rows.find((r) => r.id === item.id)}<button
               class:inactive={!cost?.current}
@@ -670,6 +737,7 @@
 <dialog
   bind:this={inputDialog}
   class:settings-modal={modal === "settings"}
+  aria-label={modal === "settings" ? tr("设置", "Settings") : labels.addAsset}
   oncancel={() => {
     modal = "";
     preview = null;
@@ -800,9 +868,9 @@
           ><div class="plan-field">
             {#if selectedService}<label>
               {tr("套餐", "Plan")}
-              <select bind:value={planPresetId} onchange={() => applyPlan(selectedService?.plans.find((p) => p.id === planPresetId))}>
+              <select bind:value={planPresetId} onchange={(e) => { planPresetId = e.currentTarget.value; applyPlan(selectedService?.plans.find((p) => p.id === planPresetId)); }}>
                 {#each selectedService.plans.filter((p) => !p.retired || p.id === planPresetId) as p}
-                  <option value={p.id}>{p.name}{p.retired ? tr("（旧套餐）", " (legacy)") : ""}</option>
+                  <option value={p.id}>{p.name}{p.retired || p.legacy ? tr("（旧订阅）", " (legacy subscription)") : ""}</option>
                 {/each}
                 <option value="">{tr("自定义套餐", "Custom plan")}</option>
               </select>
@@ -878,7 +946,7 @@
               {#if !autoPrice}<button type="button" onclick={() => (autoPrice = true)}>{tr("使用参考价", "Use reference price")}</button>{/if}
             {/if}
           {/if}
-          <a href={selectedPlan.priceSource ?? selectedService?.source} target="_blank" rel="noreferrer">{tr("官方价格", "Official pricing")}</a>
+          <a href={selectedPlan.priceSource ?? selectedService?.source} onclick={(event) => { event.preventDefault(); void external(selectedPlan?.priceSource ?? selectedService?.source); }}>{tr("官方价格", "Official pricing")}</a>
         </div>{/if}
         {#if record.kind === "recurring"}<div class="form-grid">
             <label
@@ -889,10 +957,12 @@
                 max="120"
                 step="1"
                 bind:value={record.cycleCount}
+                oninput={(e) => { record.cycleCount = Number(e.currentTarget.value); updateExpiry(); }}
               /></label
             ><label
               >{tr("付款周期", "Billing cycle")}<select
                 bind:value={record.cycleUnit}
+                onchange={(e) => { record.cycleUnit = e.currentTarget.value; updateExpiry(); }}
                 >{#each ["day", "week", "month", "year"] as unit}<option
                     value={unit}>{unitLabel(unit)}</option
                   >{/each}</select
@@ -900,27 +970,12 @@
             >
           </div>{/if}
         <div class="form-grid">
-          <label
-            >{record.kind === "lifetime"
-              ? tr("购买日期", "Purchase date")
-              : tr("开始日期", "Start date")}<input
-              required
-              type="date"
-              min="1900-01-01"
-              max="9999-12-31"
-              bind:value={record.purchasedAt}
-            /></label
-          >{#if record.kind === "recurring"}<label
-              >{tr("到期日期（可选）", "Expiry date (optional)")}<input
-                type="date"
-                min={record.purchasedAt}
-                max="9999-12-31"
-                required={!record.autoRenew}
-                value={record.expiresAt ?? ""}
-                onchange={(e) =>
-                  (record.expiresAt = e.currentTarget.value || null)}
-              /></label
-            >{/if}
+          <label>{record.kind === "lifetime" ? tr("购买日期", "Purchase date") : tr("开始日期", "Start date")}
+            <DatePicker value={record.purchasedAt} {en} required label={record.kind === "lifetime" ? tr("购买日期", "Purchase date") : tr("开始日期", "Start date")} onchange={(value) => { record.purchasedAt = value; updateExpiry(); }}/>
+          </label>
+          {#if record.kind === "recurring"}<label>{tr("到期日期", "Expiry date")}
+            <DatePicker value={record.expiresAt ?? ""} {en} required={!record.autoRenew} min={record.purchasedAt} label={tr("到期日期", "Expiry date")} onchange={(value) => record.expiresAt = value || null}/>
+          </label>{/if}
         </div>
         {#if record.kind === "recurring"}<label class="switch-row"
             ><span
@@ -1049,7 +1104,7 @@
       >
     </div>
     <div class="settings-tabs">
-      {#each [["general", "通用", "General"], ["rates", "汇率", "Exchange rates"], ["data", "数据", "Data"], ["mcp", "Agent / MCP", "Agent / MCP"]] as tab}<button
+      {#each [["general", "通用", "General"], ["rates", "汇率", "Exchange rates"], ["data", "数据", "Data"], ["mcp", "Agent / MCP", "Agent / MCP"], ["about", "关于", "About"]] as tab}<button
           class:active={settingsTab === tab[0]}
           onclick={() => (settingsTab = tab[0])}>{tab[en ? 2 : 1]}</button
         >{/each}
@@ -1114,7 +1169,7 @@
             ></label
           >{#each prefs.levels as level, i}<div class="level-rule">
               <input
-                aria-label={tr("超过金额", "Above amount")}
+                aria-label={tr("起始金额", "From amount")}
                 bind:value={level.above}
               /><input
                 aria-label={tr("等级名称", "Level name")}
@@ -1123,7 +1178,7 @@
             </div>{/each}<button
             onclick={() => prefs.levels.push({ above: "100", name: "" })}
             ><Icon name="plus" size={16}/>{tr("新增等级", "Add level")}</button
-          >{/if}
+          ><button class="text-button" onclick={() => prefs.levels = defaultLevels(en)}>{tr("恢复默认等级", "Restore default levels")}</button>{/if}
         <div class="switch-row">
           <span
             >{tr("登录时启动", "Launch at login")}<small
@@ -1256,6 +1311,21 @@
               >{tr("取消", "Cancel")}</button
             >
           </div>{/if}
+      {:else if settingsTab === "about"}<div class="about-app">
+        <img class="app-icon" src={dark ? appDark : appLight} alt="Subbit"/>
+        <h2>Subbit</h2><p>{tr("版本", "Version")} {version}</p>
+        <p>{tr("作者", "Made by")} <a href="https://github.com/sywyyhykkk" onclick={(e) => { e.preventDefault(); void external(e.currentTarget.href); }}>mango</a></p>
+        <a href="https://github.com/sywyyhykkk/subbit" onclick={(e) => { e.preventDefault(); void external(e.currentTarget.href); }}>GitHub · sywyyhykkk/subbit <Icon name="arrow" size={14}/></a>
+      </div>
+      <div class="update-box" aria-live="polite">
+        {#if updateState === "available"}<strong>{tr("发现新版本", "New version available")} {update?.version}</strong><p class="release-notes">{update?.body ?? ""}</p><button class="primary" onclick={installUpdate}>{tr("下载并安装", "Download and install")}</button>
+        {:else if updateState === "downloading"}<span>{tr("正在下载并安装…", "Downloading and installing…")} {downloadTotal ? `${Math.min(100, Math.round(downloaded / downloadTotal * 100))}%` : `${(downloaded / 1048576).toFixed(1)} MB`}</span>
+        {:else if updateState === "installed"}<p>{tr("更新已安装，重启即可使用", "Update installed. Restart to finish.")}</p><button class="primary" onclick={() => relaunch()}>{tr("立即重启", "Restart now")}</button>
+        {:else}<button disabled={updateState === "checking"} onclick={checkUpdate}><Icon name="refresh" size={16}/>{updateState === "checking" ? tr("正在检查…", "Checking…") : tr("检查更新", "Check for updates")}</button>
+          {#if updateState === "current"}<p class="hint">{tr("已是最新版本", "You're up to date")}</p>{/if}
+          {#if updateState === "error"}<p class="hint">{tr("更新失败，请重试。", "Update failed. Please retry.")} {updateError}</p>{/if}
+        {/if}
+      </div>
       {:else}<label class="switch-row"
           ><span
             ><strong>{tr("启用本地 MCP", "Enable local MCP")}</strong><small

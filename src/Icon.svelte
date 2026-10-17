@@ -1,6 +1,7 @@
 <script lang="ts">
-  let { name, size = 18 }: { name: 'plus' | 'settings' | 'search' | 'chevron' | 'close' | 'arrow' | 'back' | 'refresh' | 'download' | 'upload' | 'infinity'; size?: number } = $props();
+  let { name, size = 18 }: { name: 'plus' | 'settings' | 'search' | 'chevron' | 'close' | 'arrow' | 'back' | 'refresh' | 'download' | 'upload' | 'infinity' | 'calendar'; size?: number } = $props();
   const paths = {
+    calendar: 'M5 4h14v17H5zM8 2v4m8-4v4M5 9h14M8 13h2m4 0h2m-8 4h2m4 0h2',
     plus: 'M12 5v14M5 12h14',
     search: 'm21 21-4.5-4.5M19 10.5a8.5 8.5 0 1 1-17 0 8.5 8.5 0 0 1 17 0',
     chevron: 'm9 5 7 7-7 7',

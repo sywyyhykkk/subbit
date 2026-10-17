@@ -13,45 +13,33 @@
   ],
   "plans": [
     {
-      "id": "plus",
-      "name": "Plus",
+      "id": "1",
+      "name": "Pro",
       "kind": "recurring",
       "retired": false,
+      "legacy": true,
       "prices": [
         {
-          "amountUsd": "8.00",
+          "amountUsd": "20.00",
           "cycleUnit": "month"
         }
       ],
-      "priceSource": "https://cursor.com/pricing",
+      "priceSource": "https://prod.cursor.com/help/account-and-billing/pricing",
       "priceReviewedAt": "2026-10-17"
     },
     {
-      "id": "premium",
-      "name": "Premium",
+      "id": "2",
+      "name": "Pro+",
       "kind": "recurring",
       "retired": false,
+      "legacy": true,
       "prices": [
         {
-          "amountUsd": "30.00",
+          "amountUsd": "60.00",
           "cycleUnit": "month"
         }
       ],
-      "priceSource": "https://cursor.com/pricing",
-      "priceReviewedAt": "2026-10-17"
-    },
-    {
-      "id": "super",
-      "name": "Super",
-      "kind": "recurring",
-      "retired": false,
-      "prices": [
-        {
-          "amountUsd": "100.00",
-          "cycleUnit": "month"
-        }
-      ],
-      "priceSource": "https://cursor.com/pricing",
+      "priceSource": "https://prod.cursor.com/help/account-and-billing/pricing",
       "priceReviewedAt": "2026-10-17"
     },
     {
@@ -63,9 +51,67 @@
         {
           "amountUsd": "200.00",
           "cycleUnit": "month"
+        },
+        {
+          "amountUsd": "2000.00",
+          "cycleUnit": "year"
         }
       ],
-      "priceSource": "https://cursor.com/pricing",
+      "priceSource": "https://prod.cursor.com/help/account-and-billing/pricing",
+      "priceReviewedAt": "2026-10-17"
+    },
+    {
+      "id": "plus",
+      "name": "Plus",
+      "kind": "recurring",
+      "retired": false,
+      "prices": [
+        {
+          "amountUsd": "8.00",
+          "cycleUnit": "month"
+        },
+        {
+          "amountUsd": "80.00",
+          "cycleUnit": "year"
+        }
+      ],
+      "priceSource": "https://prod.cursor.com/help/account-and-billing/pricing",
+      "priceReviewedAt": "2026-10-17"
+    },
+    {
+      "id": "premium",
+      "name": "Premium",
+      "kind": "recurring",
+      "retired": false,
+      "prices": [
+        {
+          "amountUsd": "30.00",
+          "cycleUnit": "month"
+        },
+        {
+          "amountUsd": "300.00",
+          "cycleUnit": "year"
+        }
+      ],
+      "priceSource": "https://prod.cursor.com/help/account-and-billing/pricing",
+      "priceReviewedAt": "2026-10-17"
+    },
+    {
+      "id": "super",
+      "name": "Super",
+      "kind": "recurring",
+      "retired": false,
+      "prices": [
+        {
+          "amountUsd": "100.00",
+          "cycleUnit": "month"
+        },
+        {
+          "amountUsd": "1000.00",
+          "cycleUnit": "year"
+        }
+      ],
+      "priceSource": "https://prod.cursor.com/help/account-and-billing/pricing",
       "priceReviewedAt": "2026-10-17"
     },
     {
@@ -79,18 +125,6 @@
       "name": "Enterprise",
       "kind": "recurring",
       "retired": false
-    },
-    {
-      "id": "1",
-      "name": "Pro",
-      "kind": "recurring",
-      "retired": true
-    },
-    {
-      "id": "2",
-      "name": "Pro+",
-      "kind": "recurring",
-      "retired": true
     }
   ]
 }

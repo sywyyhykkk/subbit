@@ -86,6 +86,7 @@ export interface Plan {
   kind: "recurring" | "lifetime";
   cycleUnit?: "day" | "week" | "month" | "year";
   retired: boolean;
+  legacy?: boolean;
   prices?: PlanPrice[];
   priceSource?: string;
   priceReviewedAt?: string;

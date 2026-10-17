@@ -8,15 +8,17 @@ Rust + Tauri 2 + Svelte 5. macOS and Windows. No account, server, or bundled bro
 
 ## Download and install
 
-Get [Subbit 0.0.1](https://github.com/sywyyhykkk/subbit/releases/tag/v0.0.1):
+Get [Subbit 0.0.2](https://github.com/sywyyhykkk/subbit/releases/tag/v0.0.2):
 
-- [macOS Apple Silicon DMG](https://github.com/sywyyhykkk/subbit/releases/download/v0.0.1/Subbit_0.0.1_macos-arm64.dmg): macOS 12+, Apple M-series chips.
-- [macOS Intel DMG](https://github.com/sywyyhykkk/subbit/releases/download/v0.0.1/Subbit_0.0.1_macos-x86_64.dmg): macOS 12+, Intel processors.
-- [Windows x64 setup EXE](https://github.com/sywyyhykkk/subbit/releases/download/v0.0.1/Subbit_0.0.1_windows-x64-setup.exe): Windows 10/11 on Intel/AMD. Run the installer, then launch from the Start menu.
+- [macOS Apple Silicon DMG](https://github.com/sywyyhykkk/subbit/releases/download/v0.0.2/Subbit_0.0.2_macos-arm64.dmg): macOS 12+, Apple M-series chips.
+- [macOS Intel DMG](https://github.com/sywyyhykkk/subbit/releases/download/v0.0.2/Subbit_0.0.2_macos-x86_64.dmg): macOS 12+, Intel processors.
+- [Windows x64 setup EXE](https://github.com/sywyyhykkk/subbit/releases/download/v0.0.2/Subbit_0.0.2_windows-x64-setup.exe): Windows 10/11 on Intel/AMD. Run the installer, then launch from the Start menu.
 
 On macOS, check Apple menu → About This Mac to identify your chip, choose the matching DMG, then drag Subbit into Applications.
 
-No development tools are required. Windows installs WebView2 over the internet if it is missing. Choose an installer rather than GitHub's “Source code” archives. This release is not publisher-signed or Apple-notarized, so Gatekeeper or SmartScreen may require confirmation at first launch. See the [release notes](docs/releases/0.0.1.md) for installation conditions and validation details.
+No development tools are required. Windows installs WebView2 over the internet if it is missing. Choose an installer rather than GitHub's “Source code” archives. This release is not publisher-signed or Apple-notarized, so Gatekeeper or SmartScreen may require confirmation at first launch. See the [release notes](docs/releases/0.0.2.md) for installation conditions and validation details.
+
+Updates after 0.0.2 can be installed from **Settings → About → Check for updates**. Install 0.0.2 manually once when upgrading from 0.0.1.
 
 ## What it does
 
@@ -48,12 +50,15 @@ npm run tauri dev
 npm run check
 npm run catalog:check
 npm run test:pricing
+npm run test:dates
 npm run build
 cargo test --locked --manifest-path src-tauri/Cargo.toml
 cargo build --locked --manifest-path src-tauri/Cargo.toml
 python3 scripts/smoke-mcp.py
-npm run tauri build
+npm run tauri build -- --config '{"bundle":{"createUpdaterArtifacts":false}}'
 ```
+
+Tag releases use the `TAURI_SIGNING_PRIVATE_KEY` GitHub Actions secret to sign updater bundles and publish `latest.json`. Keep a backup of the signing key outside the repository.
 
 Build outputs are in `src-tauri/target/release/bundle/`. CI builds native macOS and Windows artifacts on their respective operating systems. Windows uses the installed system WebView2 or downloads the bootstrapper; it does not bundle an offline browser runtime. macOS development bundles are not Apple Developer signed or notarized. The single-platform, single-architecture installer target is under 50 MB; artifact sizes should be measured per build.
 
@@ -119,4 +124,4 @@ Presets are shared by the desktop picker and MCP. To add a service or fix its pl
 
 See the [complete catalog contribution guide](catalog/CONTRIBUTING.md). Catalog updates preserve existing saved names, plans and amounts. For personal-only entries, choose **Custom service** in the app; no repository contribution is needed.
 
-Application artwork is temporary. Brand icons retain their respective licenses and trademark rights; source metadata lives beside every service entry. Code and original assets are [MIT licensed](LICENSE).
+App artwork uses the Subbit rabbit, created for this project. Brand icons retain their respective licenses and trademark rights; source metadata lives beside every service entry. Code and original assets are [MIT licensed](LICENSE).

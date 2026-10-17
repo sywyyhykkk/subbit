@@ -1,9 +1,51 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "Subbit",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "identifier": "com.sywyyhykkk.subbit",
-  "build": { "beforeDevCommand": "npm run dev", "devUrl": "http://localhost:1420", "beforeBuildCommand": "npm run build", "frontendDist": "../dist" },
-  "app": { "windows": [], "security": { "csp": "default-src 'self'; img-src 'self' asset: data:; style-src 'self' 'unsafe-inline'; connect-src ipc: http://ipc.localhost; script-src 'self'" } },
-  "bundle": { "active": true, "targets": "all", "icon": ["icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png", "icons/icon.icns", "icons/icon.ico"], "category": "Finance", "shortDescription": "Your digital life, at a glance.", "macOS": {"minimumSystemVersion": "12.0"}, "windows": {"webviewInstallMode":{"type":"downloadBootstrapper"}} }
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "npm run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "windows": [],
+    "security": {
+      "csp": "default-src 'self'; img-src 'self' asset: data:; style-src 'self' 'unsafe-inline'; connect-src ipc: http://ipc.localhost; script-src 'self'"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "category": "Finance",
+    "shortDescription": "Your digital life, at a glance.",
+    "macOS": {
+      "minimumSystemVersion": "12.0"
+    },
+    "windows": {
+      "webviewInstallMode": {
+        "type": "downloadBootstrapper"
+      }
+    },
+    "publisher": "mango",
+    "copyright": "Copyright © 2026 mango",
+    "homepage": "https://github.com/sywyyhykkk/subbit",
+    "createUpdaterArtifacts": true
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDRBODU4MzM0NjY5QjEzMDQKUldRRUU1dG1OSU9GU25jRmJQS2ljNndwRmhKdXE2dDFwd3BkMy84RVBMUGw5THNWS2JmMmNCVFcK",
+      "endpoints": [
+        "https://github.com/sywyyhykkk/subbit/releases/latest/download/latest.json"
+      ]
+    }
+  }
 }

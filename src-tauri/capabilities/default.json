@@ -1,1 +1,25 @@
-{"identifier":"default","description":"Local Subbit windows","windows":["main","panel"],"permissions":["core:default","dialog:allow-open","dialog:allow-save","dialog:allow-confirm","autostart:default"]}
+{
+  "identifier": "default",
+  "description": "Local Subbit windows",
+  "windows": [
+    "main",
+    "panel"
+  ],
+  "permissions": [
+    "core:default",
+    "dialog:allow-open",
+    "dialog:allow-save",
+    "dialog:allow-confirm",
+    "autostart:default",
+    {
+      "identifier": "opener:allow-open-url",
+      "allow": [
+        {
+          "url": "https://*"
+        }
+      ]
+    },
+    "updater:default",
+    "process:allow-restart"
+  ]
+}

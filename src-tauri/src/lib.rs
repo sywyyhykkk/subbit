@@ -7,7 +7,7 @@ use serde_json::{json, Value};
 use std::path::PathBuf;
 use store::Store;
 use tauri::{
-    menu::{Menu, MenuItem},
+    menu::{Menu, MenuItem, MenuItemKind},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent},
     Emitter, Manager, WebviewUrl, WebviewWindowBuilder,
 };
@@ -24,22 +24,7 @@ fn snapshot(currency: Option<String>, period: Option<String>) -> Result<Value> {
         period.as_deref().unwrap_or(&db.settings.period),
         today(),
     )?;
-    let cny = db.summary("CNY", "month", today())?;
-    let value = cny[&db.settings.level_basis]
-        .as_str()
-        .and_then(|s| decimal(s).ok());
-    let level = if db.settings.show_level {
-        value.and_then(|v| {
-            db.settings
-                .levels
-                .iter()
-                .filter(|l| decimal(&l.above).is_ok_and(|n| v > n))
-                .max_by_key(|l| decimal(&l.above).unwrap_or_default())
-                .map(|l| l.name.clone())
-        })
-    } else {
-        None
-    };
+    let level = db.spending_level(today())?;
     Ok(
         json!({"database":db,"path":path,"summary":summary,"level":level,"executable":std::env::current_exe().map_err(|e|e.to_string())?}),
     )
@@ -111,6 +96,37 @@ fn open_main(app: tauri::AppHandle, action: Option<String>) -> Result<()> {
 fn quit(app: tauri::AppHandle) {
     app.exit(0);
 }
+#[tauri::command]
+fn apply_appearance(app: tauri::AppHandle, theme: String, dark: bool) -> Result<()> {
+    let theme = match theme.as_str() {
+        "light" => Some(tauri::Theme::Light),
+        "dark" => Some(tauri::Theme::Dark),
+        "system" => None,
+        _ => return Err("Invalid appearance".into()),
+    };
+    app.set_theme(theme);
+    #[cfg(target_os = "macos")]
+    app.run_on_main_thread(move || {
+        use objc2::{MainThreadMarker, AnyThread};
+        use objc2_app_kit::{NSApplication, NSImage};
+        use objc2_foundation::NSData;
+        if let Some(mtm) = MainThreadMarker::new() {
+            let bytes: &[u8] = if dark { include_bytes!("../../design/icons/subbit-dark.png") }
+                else { include_bytes!("../../design/icons/subbit-light.png") };
+            if let Some(icon) = NSImage::initWithData(NSImage::alloc(), &NSData::with_bytes(bytes)) {
+                unsafe { NSApplication::sharedApplication(mtm).setApplicationIconImage(Some(&icon)); }
+            }
+        }
+    }).map_err(|e| e.to_string())?;
+    #[cfg(not(target_os = "macos"))]
+    for window in app.webview_windows().values() {
+        let bytes: &[u8] = if dark { include_bytes!("../../design/icons/subbit-dark.png") }
+            else { include_bytes!("../../design/icons/subbit-light.png") };
+        window.set_icon(tauri::image::Image::from_bytes(bytes).map_err(|e| e.to_string())?)
+            .map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
 fn show_main(app: &tauri::AppHandle, action: &str) -> tauri::Result<()> {
     if let Some(panel) = app.get_webview_window("panel") {
         let _ = panel.destroy();
@@ -118,7 +134,7 @@ fn show_main(app: &tauri::AppHandle, action: &str) -> tauri::Result<()> {
     if let Some(window) = app.get_webview_window("main") {
         window.show()?;
         window.set_focus()?;
-        if ["settings", "add"].contains(&action) {
+        if ["settings", "add", "about"].contains(&action) {
             window.emit(&format!("open-{action}"), ())?;
         }
         return Ok(());
@@ -130,6 +146,7 @@ fn show_main(app: &tauri::AppHandle, action: &str) -> tauri::Result<()> {
             match action {
                 "settings" => "index.html?settings=1",
                 "add" => "index.html?add=1",
+                "about" => "index.html?about=1",
                 _ => "index.html",
             }
             .into(),
@@ -205,6 +222,9 @@ pub fn run() {
             let _ = show_main(app, "");
         }))
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_process::init())
         .plugin(
             tauri_plugin_autostart::Builder::new()
                 .args(["--background"])
@@ -222,9 +242,27 @@ pub fn run() {
             move_data,
             locate_data,
             open_main,
+            apply_appearance,
             quit
         ])
         .setup(|app| {
+            // Route the native About item to the same localized, link-enabled view.
+            let app_menu = Menu::default(app.handle())?;
+            let about = MenuItem::with_id(app, "about-subbit", "About Subbit", true, None::<&str>)?;
+            #[cfg(target_os = "macos")]
+            if let Some(MenuItemKind::Submenu(submenu)) = app_menu.items()?.first() {
+                submenu.remove_at(0)?;
+                submenu.insert(&about, 0)?;
+            }
+            #[cfg(not(target_os = "macos"))]
+            if let Some(MenuItemKind::Submenu(submenu)) = app_menu.items()?.last() {
+                submenu.remove_at(0)?;
+                submenu.insert(&about, 0)?;
+            }
+            app.set_menu(app_menu)?;
+            app.on_menu_event(|app, event| {
+                if event.id.as_ref() == "about-subbit" { let _ = show_main(app, "about"); }
+            });
             let open = MenuItem::with_id(app, "open", "打开 Subbit / Open Subbit", true, None::<&str>)?;
             let settings =
                 MenuItem::with_id(app, "settings", "设置 / Settings", true, None::<&str>)?;

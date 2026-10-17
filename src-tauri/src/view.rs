@@ -57,6 +57,7 @@ pub fn load(
     let period = period.unwrap_or(&db.settings.period);
     let summary = db.summary(currency, period, day)?;
     let level = db.spending_level(day)?;
+    let rates = crate::rates::effective(&db);
     let key = SnapshotKey {
         file,
         currency: currency.into(),
@@ -74,7 +75,7 @@ pub fn load(
             revision: db.revision,
             subscriptions: db.subscriptions,
             settings: db.settings,
-            rates: db.rates,
+            rates,
         },
     }))
 }

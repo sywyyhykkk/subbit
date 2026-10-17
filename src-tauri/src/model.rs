@@ -27,6 +27,22 @@ pub fn date(s: &str) -> Result<NaiveDate> {
     }
     Ok(d)
 }
+/// Validate a hostname without accepting URLs, ports or paths. URL parsing handles IDNs.
+pub fn validate_domain(name: &str) -> Result<()> {
+    if name.trim() != name || name.contains(['/', ':', '@', '?', '#']) {
+        return Err("Enter a domain name without a URL or path".into());
+    }
+    let url = reqwest::Url::parse(&format!("https://{name}"))
+        .map_err(|_| "Invalid domain name")?;
+    let host = url.host_str().ok_or("Invalid domain name")?;
+    if host.len() > 253 || !host.contains('.') || host.parse::<std::net::IpAddr>().is_ok()
+        || host.split('.').any(|label| label.is_empty() || label.len() > 63
+            || label.starts_with('-') || label.ends_with('-')
+            || !label.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'-')) {
+        return Err("Invalid domain name".into());
+    }
+    Ok(())
+}
 #[derive(Clone, Serialize, Deserialize, Debug, PartialEq)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct Subscription {
@@ -35,6 +51,8 @@ pub struct Subscription {
     pub service_id: Option<String>,
     pub category: String,
     pub plan: String,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub registrar: Option<String>,
     pub icon: Option<String>,
     pub amount: String,
     pub currency: String,
@@ -69,6 +87,15 @@ impl Subscription {
             || self.payment_method.len() > 100
         {
             return Err("Text is too long".into());
+        }
+        if self.registrar.as_ref().is_some_and(|v| v.len() > 200) {
+            return Err("Registrar is too long".into());
+        }
+        if self.category == "domain" {
+            validate_domain(&self.name)?;
+            if self.kind != "recurring" {
+                return Err("Domains require recurring billing".into());
+            }
         }
         let amount = decimal(&self.amount)?;
         let reimbursement = decimal(&self.reimbursement_value)?;
@@ -230,7 +257,7 @@ impl Default for Settings {
 impl Settings {
     pub fn validate(&self) -> Result<()> {
         if !CURRENCIES[..26].contains(&self.currency.as_str())
-            || !["hour", "month", "year"].contains(&self.period.as_str())
+            || !["hour", "day", "month", "year"].contains(&self.period.as_str())
             || !["system", "zh", "en"].contains(&self.language.as_str())
             || !["system", "light", "dark"].contains(&self.theme.as_str())
             || !["actual", "bill"].contains(&self.level_basis.as_str())
@@ -254,7 +281,7 @@ impl Settings {
         Ok(())
     }
 }
-#[derive(Clone, Serialize, Deserialize, Debug, Default)]
+#[derive(Clone, Serialize, Deserialize, Debug, Default, PartialEq)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct Rate {
     pub usd: String,
@@ -275,6 +302,8 @@ pub struct Database {
     pub settings: Settings,
     pub rates: BTreeMap<String, Rate>,
     pub imports: BTreeMap<String, Receipt>,
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub rate_imports: BTreeMap<String, BTreeMap<String, Rate>>,
 }
 impl Default for Database {
     fn default() -> Self {
@@ -285,6 +314,7 @@ impl Default for Database {
             settings: Settings::default(),
             rates: BTreeMap::new(),
             imports: BTreeMap::new(),
+            rate_imports: BTreeMap::new(),
         }
     }
 }
@@ -332,6 +362,7 @@ impl Database {
             .fixed_rates
             .get(currency)
             .or_else(|| self.rates.get(currency).map(|r| &r.usd))
+            .or_else(|| crate::rates::bundled().get(currency).map(|r| &r.usd))
             .and_then(|s| decimal(s).ok())
             .filter(|d| *d > Decimal::ZERO)
     }
@@ -346,6 +377,7 @@ impl Database {
         }
         let divisor = match period {
             "hour" => Decimal::from(8760),
+            "day" => Decimal::from(365),
             "month" => Decimal::from(12),
             "year" => Decimal::ONE,
             _ => return Err("Invalid period".into()),

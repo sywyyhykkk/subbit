@@ -14,12 +14,21 @@ fn tools() -> Value {
     import["properties"]["importId"] = json!({"type":"string","description":"Stable unique batch ID. Reuse only with identical records."});
     import["properties"]["allowDuplicates"] = json!({"type":"boolean","default":false});
     import["required"] = json!(["records", "importId"]);
+    let rates = json!({"type":"object","properties":{"rates":{"type":"object","additionalProperties":{"type":"object","properties":{"usd":{"type":"string"},"asOf":{"type":"string","format":"date-time"}},"required":["usd","asOf"],"additionalProperties":false}},"importId":{"type":"string"},"revision":{"type":"integer","minimum":0}},"required":["rates"],"additionalProperties":false});
+    let catalog = json!({"type":"object","properties":{"catalog":{"type":"object","description":"Complete catalog from get_catalog, including embedded icons"},"importId":{"type":"string"},"revision":{"type":"integer","minimum":0}},"required":["catalog"],"additionalProperties":false});
+    let mut import_rates = rates.clone(); import_rates["required"] = json!(["rates","importId","revision"]);
+    let mut import_catalog = catalog.clone(); import_catalog["required"] = json!(["catalog","importId","revision"]);
     json!({"tools":[
+        tool("get_exchange_rates","Read cached and bundled fallback rates, fixed overrides, source and revision without network access.",empty.clone(),true),
+        tool("preview_exchange_rates","Validate supplied USD quotes and RFC3339 timestamps without writing. Return revision for import.",rates,true),
+        tool("import_exchange_rates","Import supplied rates locally; preserve fixed rates. Preview first and pass its revision and a stable importId.",import_rates,false),
+        tool("preview_catalog","Validate a complete supplied catalog without network access or writing.",catalog,true),
+        tool("import_catalog","Replace local catalog cache, preserving saved assets; preview first and pass its revision and a stable importId.",import_catalog,false),
         tool("get_catalog","Get service categories, official plan names, currencies and the subscription schema. Never guess prices.",empty.clone(),true),
         tool("list_subscriptions","Read saved records with original amounts, currencies and expiry anchors.",empty,true),
         tool("preview_import","Validate records and identify duplicate IDs / possible duplicate names without writing.",batch,true),
         tool("import_subscriptions","Import a validated batch atomically. Preview first. Same IDs are skipped; conflicting IDs fail. Set allowDuplicates only for intentional separate accounts.",import,false),
-        tool("get_summary","Read amortized bill and personal costs. Lifetime costs use elapsed calendar days, including purchase day. Missing FX leaves totals null.",json!({"type":"object","properties":{"currency":{"type":"string"},"period":{"enum":["hour","month","year"]}},"additionalProperties":false}),true)
+        tool("get_summary","Read amortized bill and personal costs. Lifetime costs use elapsed calendar days, including purchase day. Missing FX leaves totals null.",json!({"type":"object","properties":{"currency":{"type":"string"},"period":{"enum":["hour","day","month","year"]}},"additionalProperties":false}),true)
     ]})
 }
 fn call(name: &str, args: Value) -> Result<Value> {
@@ -32,7 +41,25 @@ fn call(name: &str, args: Value) -> Result<Value> {
         "get_catalog" => {
             let cache = crate::catalog::CatalogCache::system()?;
             let catalog = cache.refresh(false).unwrap_or_else(|_| cache.load()).catalog;
-            Ok(json!({"catalog":catalog,"currencies":CURRENCIES,"subscriptionSchema":serde_json::from_str::<Value>(include_str!("../../catalog/subscription.schema.json")).unwrap()}))
+            let revision = cache.load().revision;
+            Ok(json!({"revision":revision,"catalog":catalog,"currencies":CURRENCIES,"subscriptionSchema":serde_json::from_str::<Value>(include_str!("../../catalog/subscription.schema.json")).unwrap()}))
+        }
+        "get_exchange_rates" => Ok(json!({"rates":crate::rates::effective(&db),"fixedRates":db.settings.fixed_rates,"revision":db.revision,"bundledSource":"https://api.frankfurter.dev/v2/rates?base=USD","offline":crate::network::offline()?})),
+        "preview_exchange_rates" | "import_exchange_rates" => {
+            let rates = serde_json::from_value(args["rates"].clone()).map_err(|e| e.to_string())?;
+            crate::rates::validate_import(&rates)?;
+            if name == "preview_exchange_rates" { Ok(json!({"revision":db.revision,"rates":rates})) }
+            else { crate::rates::import(&store, args["importId"].as_str().ok_or("importId required")?.into(), args["revision"].as_u64().ok_or("revision required")?, rates) }
+        }
+        "preview_catalog" | "import_catalog" => {
+            let catalog: crate::catalog::Catalog = serde_json::from_value(args["catalog"].clone()).map_err(|e| e.to_string())?;
+            catalog.validate()?;
+            let cache = crate::catalog::CatalogCache::system()?;
+            if name == "preview_catalog" { Ok(json!({"revision":cache.load().revision,"services":catalog.services.len(),"categories":catalog.categories.len()})) }
+            else {
+                let state = cache.import(args["importId"].as_str().ok_or("importId required")?.into(), args["revision"].as_u64().ok_or("revision required")?, catalog)?;
+                Ok(json!({"revision":state.revision,"updatedAt":state.updated_at}))
+            }
         }
         "list_subscriptions" => {
             Ok(json!({"subscriptions":db.subscriptions,"revision":db.revision}))
@@ -116,6 +143,8 @@ pub fn run() -> Result<()> {
                     if let Some(name) = request["params"]["name"].as_str() {
                         if ![
                             "get_catalog",
+                            "get_exchange_rates", "preview_exchange_rates", "import_exchange_rates",
+                            "preview_catalog", "import_catalog",
                             "list_subscriptions",
                             "preview_import",
                             "import_subscriptions",

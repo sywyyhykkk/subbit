@@ -1,6 +1,8 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, tick } from "svelte";
   import Icon from "./Icon.svelte";
+  import ReleaseNotes from "./ReleaseNotes.svelte";
+  import { localTimestamp, bytesLabel, reimbursementStatus } from "./display";
   import DatePicker from "./DatePicker.svelte";
   import { nextCycle } from "./dates";
   import { createReloadQueue } from "./reload";
@@ -41,7 +43,7 @@
   let directory: CatalogState = $state({ catalog: { schemaVersion: 1, categories: bundledCategories, services: bundledServices, icons: {} }, updatedAt: null });
   let pendingDirectory: CatalogState | null = $state(null);
   let catalogBusy = $state(false), catalogError = $state(false);
-  const categories = $derived(directory.catalog.categories);
+  const categories = $derived(directory.catalog.categories.some((c) => c.id === "domain") ? directory.catalog.categories : [...directory.catalog.categories, bundledCategories.find((c) => c.id === "domain")!]);
   const services = $derived(directory.catalog.services);
   const serviceIcon = (id: string | null) => {
     const service = services.find((s) => s.id === id);
@@ -56,9 +58,28 @@
     category = $state("all"),
     search = $state(""),
     filter = $state("all");
-  let sortBy = $state("added"), sortOrder = $state("desc");
+  let sortBy = $state("added"), sortOrder = $state("desc"), paymentFilter = $state("all");
+  const viewKey = "subbit.asset-view";
+  function restoreView() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(viewKey) ?? "{}");
+      sortBy = saved.sortBy === "price" ? "price" : "added";
+      sortOrder = saved.sortOrder === "asc" ? "asc" : "desc";
+      paymentFilter = typeof saved.payment === "string" ? saved.payment : "all";
+      category = typeof saved.category === "string" ? saved.category : "all";
+      filter = ["recurring", "lifetime"].includes(saved.kind) ? saved.kind : "all";
+    } catch { /* Invalid saved preferences do not prevent opening assets. */ }
+  }
+  restoreView();
+  $effect(() => {
+    const saved = { sortBy, sortOrder, payment: paymentFilter, category, kind: filter };
+    try { localStorage.setItem(viewKey, JSON.stringify(saved)); } catch { /* Storage can be unavailable in browser previews. */ }
+  });
+  let offline = $state(false);
   let version = $state(appInfo.version);
   let update: Update | null = $state(null);
+  let showUpdate = $state(false);
+  let updateDialog: HTMLDialogElement;
   let updateState = $state<"idle" | "checking" | "available" | "current" | "downloading" | "installed" | "error">("idle");
   let updateError = $state(""), downloaded = $state(0), downloadTotal = $state(0);
   let systemDark = $state(window.matchMedia("(prefers-color-scheme: dark)").matches);
@@ -68,6 +89,9 @@
   let record: Subscription = $state(blank());
   let planPresetId = $state("");
   let autoPrice = $state(false);
+  let iconRequest = 0;
+  let fetchedIcon: string | null = null;
+  let fetchedDomain = "";
   let editRevision = 0;
   let prefs: Settings = $state(structuredClone(defaultSettings));
   let settingsRevision = 0,
@@ -76,6 +100,8 @@
     rateCode = $state("USD"),
     rateValue = $state("");
   let preview: Database | null = $state(null);
+  let fileInfo: {data: number | null; backup: number | null} | null = $state(null);
+  let fileInfoError = $state(false);
   let inputDialog: HTMLDialogElement;
   const activeLanguage = $derived.by(() => modal === "settings" ? prefs.language : snap?.database.settings.language ?? "system");
   const en = $derived(activeLanguage === "en" || (activeLanguage === "system" && !navigator.language.toLowerCase().startsWith("zh")));
@@ -87,7 +113,7 @@
     addAsset: tr("新增资产", "Add asset"),
     personalCost: tr("实际花销", "Personal cost"),
     billedCost: tr("账单花销", "Billed cost"),
-    locateData: tr("定位已有数据", "Locate existing data"),
+    locateData: tr("选择已有数据文件", "Choose existing data file"),
     changeIcon: tr("更换图标", "Change icon"),
     openApp: tr("打开 Subbit", "Open Subbit"),
     ratesUpdated: tr("汇率已更新", "Exchange rates updated"),
@@ -101,7 +127,8 @@
       (s) =>
         (category === "all" || s.category === category) &&
         (filter === "all" || s.kind === filter) &&
-        `${s.name} ${s.plan} ${s.notes}`
+        (paymentFilter === "all" || s.paymentMethod === paymentFilter) &&
+        `${s.name} ${s.plan} ${s.registrar ?? ""} ${s.notes}`
           .toLowerCase()
           .includes(search.toLowerCase()),
     ).sort((a, b) => {
@@ -131,7 +158,7 @@
   );
   const customServices = $derived(
     entries.filter((s) =>
-      !s.serviceId &&
+      !s.serviceId && s.category !== "domain" &&
       (pickerCategory === "all" || s.category === pickerCategory) &&
       s.name.toLowerCase().includes(pickerSearch.toLowerCase()),
     ).filter((s, i, all) => all.findIndex((x) => x.name === s.name) === i),
@@ -216,7 +243,7 @@
     if (isTauri()) applyDirectory(await call<CatalogState>("load_catalog"));
   }
   async function refreshDirectory(force = false) {
-    if (!isTauri() || catalogBusy) return;
+    if (!isTauri() || catalogBusy || offline) return;
     catalogBusy = true;
     catalogError = false;
     try {
@@ -261,6 +288,7 @@
         };
         return;
       }
+      offline = await call<boolean>("offline_mode");
       const requestedCurrency = currency, requestedPeriod = period;
       const next = await call<Snapshot | null>(
         "snapshot",
@@ -315,6 +343,7 @@
     modal = "picker";
   }
   function choose(service?: Service, custom?: Subscription) {
+    iconRequest++; fetchedIcon = null; fetchedDomain = "";
     record = blank();
     record.currency = en ? "USD" : "CNY";
     if (service) {
@@ -336,10 +365,12 @@
       record.name = pickerSearch;
       record.category = pickerCategory === "all" ? "other" : pickerCategory;
     }
+    if (record.category === "domain") { record.cycleUnit = "year"; record.registrar = ""; }
     updateExpiry();
     modal = "editor";
   }
   function edit(s: Subscription) {
+    iconRequest++; fetchedIcon = null; fetchedDomain = "";
     if (panel) {
       void call("open_main");
       return;
@@ -351,6 +382,14 @@
     if (record.kind === "recurring" && !record.expiresAt) updateExpiry();
     editRevision = snap!.database.revision;
     modal = "editor";
+  }
+  function changeCategory() {
+    if (record.category === "domain") {
+      record.kind = "recurring"; record.cycleUnit = "year"; record.cycleCount = 1;
+      record.serviceId = null; planPresetId = ""; autoPrice = false;
+      record.registrar ??= "";
+      setKind();
+    }
   }
   function setKind() {
     if (record.kind === "lifetime") {
@@ -394,6 +433,7 @@
         }
       }
       payload.name = payload.name.trim();
+      payload.registrar = payload.registrar?.trim() || undefined;
       payload.expiresAt = payload.expiresAt || null;
       // Keep the original start-date anchor for month ends and leap years.
       if (payload.autoRenew && payload.expiresAt === nextCycle(payload.purchasedAt, payload.cycleUnit, payload.cycleCount)) payload.expiresAt = null;
@@ -428,8 +468,43 @@
       }
     });
   }
+  async function fetchDomainIcon() {
+    if (record.category !== "domain" || offline || !isTauri()) return;
+    const domain = record.name.trim();
+    if (fetchedIcon && fetchedDomain !== domain && record.icon === fetchedIcon) record.icon = null;
+    if (record.icon || !domain.includes(".") || /[/:@?#\s]/.test(domain)) return;
+    const request = ++iconRequest, id = record.id;
+    const current = () => request === iconRequest && modal === "editor" && record.id === id && record.category === "domain" && record.name.trim() === domain && !record.icon && !offline;
+    let links: string[] = [];
+    try {
+      const page = await call<{url: string; html: string}>("website_icon", { domain, iconUrl: null });
+      // Parse an inert document; never insert website HTML into the application.
+      const template = document.createElement("template");
+      template.innerHTML = page.html;
+      const doc = template.content;
+      links = Array.from(doc.querySelectorAll<HTMLLinkElement>('link[rel]'))
+        .filter((link) => link.rel.toLowerCase().split(/\s+/).some((rel) => rel === "icon" || rel === "apple-touch-icon"))
+        .flatMap((link) => { try { const url = new URL(link.getAttribute("href") ?? "", page.url); return url.protocol === "https:" ? [url.href] : []; } catch { return []; } }).slice(0, 3);
+    } catch { /* Root favicon remains a fallback when the page cannot be parsed. */ }
+    for (const iconUrl of [...new Set([...links, `https://${domain}/favicon.ico`])]) {
+      if (!current()) return;
+      try {
+        const { data } = await call<{data: string}>("website_icon", { domain, iconUrl });
+        if (!current()) return;
+        const image = new Image(); image.src = data; await image.decode();
+        if (!current()) return;
+        const canvas = document.createElement("canvas"); canvas.width = canvas.height = 96;
+        const size = Math.max(image.naturalWidth, image.naturalHeight);
+        if (!size) continue;
+        canvas.getContext("2d")!.drawImage(image, (96 - image.naturalWidth / size * 96) / 2, (96 - image.naturalHeight / size * 96) / 2, image.naturalWidth / size * 96, image.naturalHeight / size * 96);
+        fetchedIcon = canvas.toDataURL("image/png"); fetchedDomain = domain; record.icon = fetchedIcon;
+        return;
+      } catch { /* Keep the globe when a site does not expose a supported favicon. */ }
+    }
+  }
   async function uploadIcon(file?: File) {
     if (!file) return;
+    iconRequest++; fetchedIcon = null; fetchedDomain = "";
     await action(async () => {
       if (!["image/png", "image/jpeg", "image/webp"].includes(file.type))
         throw new Error(
@@ -465,12 +540,32 @@
     if (prefs.levels.length === 1 && prefs.levels[0].above === "100" && prefs.levels[0].name === "数字土豪") prefs.levels = defaultLevels(en);
     modal = "settings";
     settingsTab = "general";
+    fileInfo = null; fileInfoError = false;
+    if (isTauri()) try { fileInfo = await call("data_file_info"); } catch { fileInfoError = true; }
     if (isTauri())
       try {
         autoStart = await isEnabled();
       } catch (e) {
         error = String(e);
       }
+  }
+  async function toggleOffline() {
+    if (["checking", "downloading"].includes(updateState)) { error = tr("请等待应用更新操作完成", "Wait for the update operation to finish"); return; }
+    const enabled = !offline;
+    if (enabled && !await confirm(tr(
+      "开启后将停止联网更新汇率、服务目录、网站图标和应用版本。\n\n本地汇率可能已过时，换算结果可能与实时价格有差异；服务目录可能不包含最新服务、套餐和参考价。已保存的资产不受影响。\n\n你仍可在设置中填写固定汇率，或通过 Agent 使用 MCP 导入汇率和服务目录。",
+      "Subbit will stop updating exchange rates, the service catalog, website icons and the application online.\n\nLocal rates may be outdated and conversions may differ from current prices. The catalog may lack recent services, plans and reference prices. Saved assets are unaffected.\n\nYou can still set fixed rates in Settings or use an Agent to import rates and catalogs through MCP."
+    ), { title: tr("开启离线模式", "Enable offline mode"), kind: "warning", okLabel: tr("开启离线模式", "Enable offline mode"), cancelLabel: tr("取消", "Cancel") })) return;
+    await action(async () => {
+      await call("set_offline_mode", { enabled });
+      offline = enabled;
+      if (enabled) { await update?.close(); update = null; updateState = "idle"; showUpdate = false; }
+    });
+  }
+  async function onlineAllowed() {
+    if (offline) { error = tr("请先关闭离线模式", "Turn off offline mode first"); return false; }
+    try { if (isTauri()) await call("require_online"); return true; }
+    catch (e) { error = String(e); return false; }
   }
   async function savePrefs() {
     await action(async () => {
@@ -542,6 +637,7 @@
       if (directory) {
         await call("move_data", { directory });
         await reload();
+        fileInfo = await call("data_file_info");
         notice = tr(
           "数据位置已切换，原文件保留",
           "Data location changed. Original file retained.",
@@ -553,6 +649,7 @@
     await action(async () => {
       const path = await open({
         multiple: false,
+        defaultPath: snap?.path,
         filters: [{ name: "JSON", extensions: ["json"] }],
       });
       if (path) {
@@ -583,22 +680,24 @@
     if (autoPrice) record.amount = quote.status === "ready" ? quote.amount : "";
   });
   async function external(url?: string) {
-    if (!url) return;
+    if (!url || !await onlineAllowed()) return;
     try { if (isTauri()) await openUrl(url); else window.open(url, "_blank", "noopener,noreferrer"); }
     catch (e) { error = String(e); }
   }
   async function checkUpdate() {
-    if (["checking", "downloading"].includes(updateState)) return;
+    if (["checking", "downloading"].includes(updateState) || !await onlineAllowed()) return;
     updateState = "checking"; updateError = "";
     try {
       if (!isTauri()) throw new Error(tr("请在桌面应用中检查更新", "Check for updates in the desktop app"));
       await update?.close(); update = null;
       update = await check({ timeout: 30000 });
+      if (!await onlineAllowed()) { await update?.close(); update = null; updateState = "idle"; return; }
       updateState = update ? "available" : "current";
+      showUpdate = !!update;
     } catch (e) { updateState = "error"; updateError = String(e); }
   }
   async function installUpdate() {
-    if (!update || updateState !== "available") return;
+    if (!update || updateState !== "available" || !await onlineAllowed()) return;
     updateState = "downloading"; downloaded = 0; downloadTotal = 0;
     try {
       await update.downloadAndInstall((event) => {
@@ -617,12 +716,19 @@
     if (modal !== "settings") preview = null;
   });
   $effect(() => {
+    if (showUpdate && updateDialog && !updateDialog.open) updateDialog.showModal();
+    if (!showUpdate && updateDialog?.open) updateDialog.close();
+  });
+  $effect(() => {
     if (modal && inputDialog && !inputDialog.open) inputDialog.showModal();
     if (!modal && inputDialog?.open) inputDialog.close();
   });
   onMount(() => {
     let cleanup: (() => void)[] = [];
     let disposed = false;
+    const storageChanged = (event: StorageEvent) => { if (event.key === viewKey) restoreView(); };
+    window.addEventListener("storage", storageChanged);
+    cleanup.push(() => window.removeEventListener("storage", storageChanged));
     const appearance = window.matchMedia("(prefers-color-scheme: dark)");
     const changedAppearance = () => systemDark = appearance.matches;
     appearance.addEventListener("change", changedAppearance);
@@ -630,13 +736,20 @@
     void (async () => {
       await loadDirectory().catch(() => {});
       await reload(true);
+      if (panel && isTauri()) {
+        await tick();
+        // Hidden WebViews may pause animation frames; flush DOM layout before revealing.
+        document.documentElement.getBoundingClientRect();
+        await call("panel_ready", { dark });
+      }
       if (new URLSearchParams(location.search).has("settings")) await settings();
       if (new URLSearchParams(location.search).has("about")) { await settings(); settingsTab = "about"; }
       if (isTauri()) {
         if (new URLSearchParams(location.search).has("add")) await picker();
-        for (const name of ["data-changed", "open-settings", "open-add", "open-about"]) {
+        for (const name of ["network-changed", "data-changed", "open-settings", "open-add", "open-about"]) {
           const unlisten = await listen(name, () => {
-            if (name === "open-about") void settings().then(() => settingsTab = "about");
+            if (name === "network-changed") void call<boolean>("offline_mode").then((value) => offline = value);
+            else if (name === "open-about") void settings().then(() => settingsTab = "about");
             else if (name === "open-settings") void settings();
             else if (name === "open-add") void picker();
             else if (!modal && !busy) void reload();
@@ -644,7 +757,7 @@
           if (disposed) unlisten();
           else cleanup.push(unlisten);
         }
-        if (!modal) void rates();
+        if (!modal && !offline) void rates();
         void refreshDirectory();
       }
     })();
@@ -682,7 +795,7 @@
     <section class="overview" aria-label={tr("成本总览", "Cost overview")}>
       <div class="overview-heading">
         <div class="controls"><select aria-label={tr("显示币种", "Display currency")} bind:value={currency} onchange={() => reload()}>{#each currencies.slice(0, 26) as c}<option>{c}</option>{/each}</select>
-          <div class="segmented">{#each ["hour", "month", "year"] as unit}<button class:active={period === unit} aria-pressed={period === unit} onclick={() => {period = unit; void reload();}}>{tr("每", "/")}{unitLabel(unit)}</button>{/each}</div>
+          <div class="segmented">{#each ["hour", "day", "month", "year"] as unit}<button class:active={period === unit} aria-pressed={period === unit} onclick={() => {period = unit; void reload();}}>{tr("每", "/")}{unitLabel(unit)}</button>{/each}</div>
         </div>
       </div>
       <div class="summary-grid">
@@ -709,6 +822,7 @@
       </div>
       <div class="list-head">
         <div class="sort-controls"><span>{tr("服务 / 套餐", "Service / Plan")}</span>
+          <select aria-label={tr("支付方式", "Payment method")} bind:value={paymentFilter}><option value="all">{tr("全部支付方式", "All payments")}</option><option value="">{tr("未设置", "Not set")}</option>{#each paymentMethods as method}<option value={method[0]}>{method[en ? 2 : 1]}</option>{/each}</select>
           <select aria-label={tr("排序依据", "Sort by")} bind:value={sortBy}><option value="added">{tr("添加时间", "Date added")}</option><option value="price">{tr("价格", "Price")}</option></select>
           <select aria-label={tr("排序方向", "Sort order")} bind:value={sortOrder}><option value="desc">{tr("降序", "Descending")}</option><option value="asc">{tr("升序", "Ascending")}</option></select>
         </div><span>{labels.personalCost} / {unitLabel(period)}</span>
@@ -723,7 +837,7 @@
               ? tr("没有匹配的资产", "No matching assets")
               : tr("还没有数字资产", "No assets yet")}
           </h2>
-          {#if entries.length}<button onclick={() => { category = "all"; filter = "all"; search = ""; }}>{tr("清除筛选", "Clear filters")}</button>
+          {#if entries.length}<button onclick={() => { category = "all"; filter = "all"; paymentFilter = "all"; search = ""; }}>{tr("清除筛选", "Clear filters")}</button>
           {:else}<button class="primary" onclick={picker}><Icon name="plus"/>{labels.addAsset}</button>{/if}
         </div>
       {:else}<div class="asset-list">
@@ -737,7 +851,7 @@
                 >{#if item.icon || serviceIcon(item.serviceId)}<img
                     src={item.icon || serviceIcon(item.serviceId)}
                     alt=""
-                  />{:else}<span
+                  />{:else if item.category === "domain"}<Icon name="globe" size={28}/>{:else}<span
                     >{item.category === "vpn"
                       ? "⌁"
                       : item.name.slice(0, 1)}</span
@@ -745,13 +859,13 @@
               >
               <span class="asset-info"
                 ><strong
-                  >{item.name}<span class="tag"
+                  ><span class="asset-name" title={item.name}>{item.name}</span><span class="tag"
                     >{item.kind === "lifetime"
                       ? tr("买断", "Lifetime")
                       : categoryName(item.category)}</span
                   ></strong
-                ><span class="asset-meta"
-                  >{item.plan || tr("自定义套餐", "Custom plan")} · {item.currency}
+                ><span class="asset-meta" title={`${item.category === "domain" ? item.registrar ?? "" : item.plan || tr("自定义套餐", "Custom plan")} · ${item.currency} ${item.amount}${item.kind === "recurring" ? ` / ${item.cycleCount} ${unitLabel(item.cycleUnit)}` : ""}`}
+                  >{item.category === "domain" ? (item.registrar ? `${item.registrar} · ` : "") : `${item.plan || tr("自定义套餐", "Custom plan")} · `}{item.currency}
                   {item.amount}{item.kind === "recurring"
                     ? ` / ${item.cycleCount > 1 ? item.cycleCount : ""}${unitLabel(item.cycleUnit)}`
                     : ""}</span
@@ -778,7 +892,7 @@
                 ></span
               >
               <span class="asset-cost"
-                ><strong>{money(cost?.actual)}</strong></span
+                ><strong>{money(cost?.actual)}</strong>{#if reimbursementStatus(item) === "full"}<small>{tr("全额报销", "Fully reimbursed")}</small>{:else if reimbursementStatus(item) === "partial"}<small>{tr("部分报销", "Partly reimbursed")}</small>{/if}</span
               ><span class="chevron"><Icon name="chevron" size={16}/></span>
             </button>{/each}
         </div>{/if}
@@ -893,7 +1007,7 @@
               >{#if record.icon || serviceIcon(record.serviceId)}<img
                   src={record.icon || serviceIcon(record.serviceId)}
                   alt=""
-                />{:else}{record.category === "vpn"
+                />{:else if record.category === "domain"}<Icon name="globe" size={28}/>{:else}{record.category === "vpn"
                   ? "⌁"
                   : record.name.slice(0, 1) || "＋"}{/if}</span
             ><input
@@ -903,22 +1017,24 @@
               onchange={(e) => uploadIcon(e.currentTarget.files?.[0])}
             /><small>{labels.changeIcon}</small></label
           ><label class="grow"
-            >{tr("名称", "Name")}<input
+            >{record.category === "domain" ? tr("域名", "Domain") : tr("名称", "Name")}<input
               required
               maxlength="100"
               bind:value={record.name}
-              placeholder={tr("服务或软件名称", "Service or software name")}
+              onblur={() => void fetchDomainIcon()}
+              placeholder={record.category === "domain" ? "example.com" : tr("服务或软件名称", "Service or software name")}
             /></label
           >
         </div>
         <div class="form-grid">
           <label
-            >{tr("分类", "Category")}<select bind:value={record.category}
+            >{tr("分类", "Category")}<select bind:value={record.category} onchange={changeCategory}
               >{#if !categories.some((c) => c.id === record.category)}<option value={record.category}>{record.category}</option>{/if}{#each categories as c}<option value={c.id}
                   >{en ? c.en : c.zh}</option
                 >{/each}</select
             ></label
           ><div class="plan-field">
+            {#if record.category === "domain"}<label>{tr("域名管理商", "Registrar")}<input bind:value={record.registrar} maxlength="200" list="registrars" placeholder={tr("输入管理商名称", "Enter registrar name")}/><datalist id="registrars">{#each [...new Set(entries.filter((s) => s.category === "domain" && s.registrar).map((s) => s.registrar!))] as registrar}<option value={registrar}></option>{/each}</datalist></label>{:else}
             {#if selectedService}<label>
               {tr("套餐", "Plan")}
               <select bind:value={planPresetId} onchange={(e) => { planPresetId = e.currentTarget.value; applyPlan(selectedService?.plans.find((p) => p.id === planPresetId)); }}>
@@ -932,6 +1048,7 @@
               {tr("自定义套餐", "Custom plan")}
               <input bind:value={record.plan} placeholder={tr("输入套餐名称", "Enter plan name")} />
             </label>{/if}
+            {/if}
           </div>
         </div>
         <fieldset class="kind-choice">
@@ -950,6 +1067,7 @@
             ><input
               type="radio"
               value="lifetime"
+              disabled={record.category === "domain"}
               bind:group={record.kind}
               onchange={() => {
                 record.kind = "lifetime";
@@ -1162,7 +1280,9 @@
         >{/each}
     </div>
     <div class="dialog-content settings-content">
-      {#if settingsTab === "general"}<div class="form-grid">
+      {#if settingsTab === "general"}
+        <div class="switch-row"><span>{tr("离线模式", "Offline mode")}<small>{tr("禁止 Subbit 主动联网，立即生效", "Stop Subbit from connecting online; applies immediately")}</small></span><button role="switch" aria-checked={offline} disabled={busy || ["checking", "downloading"].includes(updateState)} onclick={toggleOffline}>{offline ? tr("已开启", "On") : tr("已关闭", "Off")}</button></div>
+        <div class="form-grid">
           <label
             >{tr("语言", "Language")}<select bind:value={prefs.language}
               ><option value="system">{tr("跟随系统", "System")}</option><option
@@ -1183,7 +1303,7 @@
             ></label
           ><label
             >{tr("默认统计周期", "Default summary period")}<select bind:value={prefs.period}
-              >{#each ["hour", "month", "year"] as unit}<option value={unit}
+              >{#each ["hour", "day", "month", "year"] as unit}<option value={unit}
                   >{unitLabel(unit)}</option
                 >{/each}</select
             ></label
@@ -1276,7 +1396,7 @@
           )}
         </p>
         <button
-          disabled={busy}
+          disabled={busy || offline}
           onclick={() =>
             action(async () => {
               const warnings = await call<string[]>("refresh_rates", {
@@ -1301,6 +1421,7 @@
             bind:value={rateValue}
           /><button onclick={addRate}>{tr("设置固定汇率", "Set fixed rate")}</button>
         </div>
+        <p class="hint">{tr("缺失的法币汇率使用安装包内置快照（Frankfurter，2026-10-16 / 17）；已有缓存与固定汇率优先。", "Missing fiat rates use the bundled Frankfurter snapshot (2026-10-16 / 17); cached and fixed rates take priority.")}</p>
         <div class="rates-list">
           {#each currencies as c}{#if prefs.fixedRates[c] || snap?.database.rates[c]}<div
               >
@@ -1308,7 +1429,7 @@
                   >{prefs.fixedRates[c] ?? snap?.database.rates[c]?.usd} USD<small
                     >{prefs.fixedRates[c]
                       ? tr("固定汇率", "Fixed exchange rate")
-                      : snap?.database.rates[c]?.asOf.slice(0, 10)}</small
+                      : localTimestamp(snap?.database.rates[c]?.asOf)}</small
                   ></span
                 >{#if prefs.fixedRates[c]}<button
                     aria-label={tr("移除固定汇率", "Remove fixed rate")}
@@ -1327,7 +1448,9 @@
             >{snap?.path}</code
           >
         </div>
+        <p class="file-sizes">{#if fileInfo}{tr("数据文件", "Data file")} {fileInfo.data == null ? tr("尚未创建", "Not created") : bytesLabel(fileInfo.data)} · {tr("备份", "Backup")} {fileInfo.backup == null ? tr("尚无备份", "No backup yet") : bytesLabel(fileInfo.backup)} · {tr("合计", "Total")} {bytesLabel((fileInfo.data ?? 0) + (fileInfo.backup ?? 0))}{:else}{fileInfoError ? tr("无法读取文件大小", "File sizes unavailable") : "—"}{/if}</p>
         <div class="button-row">
+          <button disabled={busy} onclick={() => action(async () => { await call("reveal_data"); })}>{tr("打开所在文件夹", "Show in folder")}</button>
           <button disabled={busy} onclick={moveData}
             >{tr("更换存储文件夹", "Change folder")}</button
           ><button disabled={busy} onclick={locateData}
@@ -1362,8 +1485,8 @@
             >
           </div>{/if}
         <h3>{tr("服务目录", "Service catalog")}</h3>
-        <p class="hint">{services.length} {tr("项服务", "services")} · {categories.length} {tr("个分类", "categories")} · {directory.updatedAt ? new Date(directory.updatedAt * 1000).toLocaleDateString(en ? "en-US" : "zh-CN") : tr("内置目录", "Built-in catalog")}</p>
-        <button disabled={catalogBusy} onclick={() => refreshDirectory(true)}><Icon name="refresh" size={16}/>{catalogBusy ? tr("正在更新…", "Updating…") : tr("更新目录", "Update catalog")}</button>
+        <p class="hint">{services.length} {tr("项服务", "services")} · {categories.length} {tr("个分类", "categories")} · {directory.updatedAt ? localTimestamp(directory.updatedAt) : tr("内置目录", "Built-in catalog")}</p>
+        <button disabled={catalogBusy || offline} onclick={() => refreshDirectory(true)}><Icon name="refresh" size={16}/>{catalogBusy ? tr("正在更新…", "Updating…") : tr("更新目录", "Update catalog")}</button>
         {#if catalogError}<p class="hint" role="status">{tr("更新失败，继续使用本地目录", "Update failed. Using the local catalog.")}</p>{/if}
       {:else if settingsTab === "about"}<div class="about-app">
         <img class="app-icon" src={dark ? appDark : appLight} alt="Subbit"/>
@@ -1372,7 +1495,7 @@
         <a href="https://github.com/sywyyhykkk/subbit" onclick={(e) => { e.preventDefault(); void external(e.currentTarget.href); }}>GitHub · sywyyhykkk/subbit <Icon name="arrow" size={14}/></a>
       </div>
       <div class="update-box" aria-live="polite">
-        {#if updateState === "available"}<strong>{tr("发现新版本", "New version available")} {update?.version}</strong><p class="release-notes">{update?.body ?? ""}</p><button class="primary" onclick={installUpdate}>{tr("下载并安装", "Download and install")}</button>
+        {#if updateState === "available"}<strong>{tr("发现新版本", "New version available")} {update?.version}</strong><button onclick={() => showUpdate = true}>{tr("查看更新内容", "View release notes")}</button>
         {:else if updateState === "downloading"}<span>{tr("正在下载并安装…", "Downloading and installing…")} {downloadTotal ? `${Math.min(100, Math.round(downloaded / downloadTotal * 100))}%` : `${(downloaded / 1048576).toFixed(1)} MB`}</span>
         {:else if updateState === "installed"}<p>{tr("更新已安装，重启即可使用", "Update installed. Restart to finish.")}</p><button class="primary" onclick={() => relaunch()}>{tr("立即重启", "Restart now")}</button>
         {:else}<button disabled={updateState === "checking"} onclick={checkUpdate}><Icon name="refresh" size={16}/>{updateState === "checking" ? tr("正在检查…", "Checking…") : tr("检查更新", "Check for updates")}</button>
@@ -1404,8 +1527,8 @@
         <button onclick={copyMcp}>{tr("复制连接配置", "Copy connection config")}</button>
         <p class="hint">
           {tr(
-            "可用工具：查询目录、列出资产、预览导入、批量导入、费用汇总。使用云端 Agent 时，工具返回的数据会交给该 Agent 处理。",
-            "Tools: catalog, subscriptions, import preview, batch import and cost summary. With a cloud Agent, returned data is processed by that Agent.",
+            "可用工具：查询目录、列出资产、资产导入、费用汇总，以及汇率和目录的本地预览与导入。使用云端 Agent 时，工具返回的数据会交给该 Agent 处理。",
+            "Tools: catalog, subscriptions, asset imports, cost summaries, and local exchange-rate/catalog previews and imports. With a cloud Agent, returned data is processed by that Agent.",
           )}
         </p>{/if}
     </div>
@@ -1441,3 +1564,12 @@
       onclick={() => (notice = "")}><Icon name="close" size={16}/></button
     >
   </div>{/if}
+
+<dialog bind:this={updateDialog} class="update-dialog" aria-label={tr("更新内容", "Release notes")} oncancel={(event) => { if (updateState === "downloading") event.preventDefault(); else showUpdate = false; }}>
+  <div class="dialog-header"><h2>{tr("更新内容", "Release notes")} {update?.version ?? ""}</h2><button class="icon-button" disabled={updateState === "downloading"} aria-label={tr("关闭", "Close")} onclick={() => showUpdate = false}><Icon name="close"/></button></div>
+  <div class="dialog-content">{#if showUpdate}<ReleaseNotes text={update?.body ?? tr("暂无更新说明", "No release notes available")} openLink={(url) => void external(url)}/>{/if}{#if updateState === "error"}<p role="alert">{updateError}</p>{/if}</div>
+  <div class="dialog-footer"><button disabled={updateState === "downloading"} onclick={() => showUpdate = false}>{tr("稍后", "Later")}</button>
+    {#if updateState === "installed"}<button class="primary" onclick={() => relaunch()}>{tr("立即重启", "Restart now")}</button>
+    {:else}<button class="primary" disabled={offline || updateState !== "available"} onclick={installUpdate}>{updateState === "downloading" ? tr("正在下载并安装…", "Downloading and installing…") : tr("下载并安装", "Download and install")}</button>{/if}
+  </div>
+</dialog>

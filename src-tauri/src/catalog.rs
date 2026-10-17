@@ -11,7 +11,6 @@ use std::{
     fs::{self, OpenOptions},
     io::Read,
     path::PathBuf,
-    time::Duration,
 };
 
 const URL: &str = "https://raw.githubusercontent.com/sywyyhykkk/subbit/catalog/catalog.json";
@@ -44,6 +43,11 @@ fn id(value: &Value) -> Result<&str> {
     Ok(id)
 }
 impl Catalog {
+    fn ensure_domain_category(&mut self) {
+        if !self.categories.iter().any(|c| c["id"] == "domain") {
+            self.categories.push(serde_json::json!({"id":"domain","zh":"域名","en":"Domains","icon":"◎"}));
+        }
+    }
     pub fn validate(&self) -> Result<()> {
         if self.schema_version != 1
             || self.categories.is_empty()
@@ -181,6 +185,10 @@ pub fn bundled() -> Catalog {
 pub struct CatalogState {
     pub catalog: Catalog,
     pub updated_at: Option<i64>,
+    #[serde(default)]
+    pub revision: u64,
+    #[serde(default, skip_serializing_if = "BTreeMap::is_empty")]
+    pub imports: BTreeMap<String, Catalog>,
 }
 
 pub struct CatalogCache {
@@ -207,12 +215,38 @@ impl CatalogCache {
             state.catalog.validate()?;
             Ok(state)
         })();
-        cached.unwrap_or_else(|_| CatalogState {
+        let mut state = cached.unwrap_or_else(|_| CatalogState {
             catalog: bundled(),
             updated_at: None,
-        })
+            revision: 0,
+            imports: BTreeMap::new(),
+        });
+        state.catalog.ensure_domain_category();
+        state
+    }
+    pub fn import(&self, id: String, revision: u64, catalog: Catalog) -> Result<CatalogState> {
+        catalog.validate()?;
+        if id.is_empty() || id.len() > 100 { return Err("A stable importId is required".into()); }
+        fs::create_dir_all(&self.root).map_err(|e| e.to_string())?;
+        let lock = OpenOptions::new().create(true).truncate(false).read(true).write(true)
+            .open(self.root.join("catalog.lock")).map_err(|e| e.to_string())?;
+        lock.lock_exclusive().map_err(|e| e.to_string())?;
+        let mut state = self.load();
+        if let Some(previous) = state.imports.get(&id) {
+            if previous != &catalog { return Err("importId was used for a different catalog".into()); }
+            return Ok(state);
+        }
+        if state.revision != revision { return Err("Catalog changed; preview again".into()); }
+        state.imports.insert(id, catalog.clone());
+        state.catalog = catalog;
+        state.catalog.ensure_domain_category();
+        state.revision += 1;
+        state.updated_at = Some(chrono::Utc::now().timestamp());
+        write_json(&self.root.join("catalog.json"), &state, true)?;
+        Ok(state)
     }
     pub fn refresh(&self, force: bool) -> Result<CatalogState> {
+        crate::network::require_online()?;
         self.refresh_from(force, URL)
     }
     fn refresh_from(&self, force: bool, url: &str) -> Result<CatalogState> {
@@ -236,28 +270,13 @@ impl CatalogCache {
         }
         // A failed request is retried after 15 minutes; offline window opens stay instant.
         write_json(&check_path, &now, false)?;
-        crate::init_tls();
-        let client = reqwest::blocking::Client::builder()
-            .timeout(Duration::from_secs(15))
-            .user_agent(concat!("Subbit/", env!("CARGO_PKG_VERSION")))
-            .build()
-            .map_err(|e| e.to_string())?;
-        let response = client
-            .get(url)
-            .send()
-            .and_then(|r| r.error_for_status())
-            .map_err(|e| e.to_string())?;
-        let mut bytes = Vec::new();
-        response
-            .take(MAX_BYTES + 1)
-            .read_to_end(&mut bytes)
-            .map_err(|e| e.to_string())?;
-        if bytes.len() as u64 > MAX_BYTES {
-            return Err("Catalog exceeds 8 MB".into());
-        }
-        let catalog: Catalog = serde_json::from_slice(&bytes).map_err(|e| e.to_string())?;
+        let bytes = crate::network::download(url, MAX_BYTES as usize)?.bytes;
+        let mut catalog: Catalog = serde_json::from_slice(&bytes).map_err(|e| e.to_string())?;
         catalog.validate()?;
+        catalog.ensure_domain_category();
         let state = CatalogState {
+            revision: current.revision + 1,
+            imports: current.imports,
             updated_at: if catalog == current.catalog && current.updated_at.is_some() {
                 current.updated_at
             } else {
@@ -265,8 +284,9 @@ impl CatalogCache {
             },
             catalog,
         };
+        crate::network::require_online()?;
         // One atomic file contains metadata AND icons. The asset store is never opened here.
-        write_json(&self.root.join("catalog.json"), &state, false)?;
+        write_json(&self.root.join("catalog.json"), &state, true)?;
         Ok(state)
     }
 }
@@ -276,6 +296,28 @@ mod tests {
     use super::*;
     use std::{io::Write, net::TcpListener};
 
+    #[test]
+    fn legacy_catalog_download_keeps_domain_category_available() {
+        let root = tempfile::tempdir().unwrap();
+        let cache = CatalogCache::at(root.path().into());
+        let mut legacy = bundled(); legacy.categories.retain(|category| category["id"] != "domain");
+        let downloaded = download(&cache, &legacy).unwrap();
+        assert!(downloaded.catalog.categories.iter().any(|category| category["id"] == "domain"));
+        let state = cache.import("legacy".into(), downloaded.revision, legacy).unwrap();
+        assert!(state.catalog.categories.iter().any(|category| category["id"] == "domain"));
+    }
+    #[test]
+    fn supplied_catalog_import_is_atomic_versioned_and_replay_safe() {
+        let root = tempfile::tempdir().unwrap();
+        let cache = CatalogCache::at(root.path().into());
+        let first = cache.import("one".into(), 0, bundled()).unwrap();
+        assert_eq!(first.revision, 1);
+        assert_eq!(cache.import("one".into(), 0, bundled()).unwrap().revision, 1);
+        assert!(cache.import("two".into(), 0, updated()).is_err());
+        assert!(cache.import("one".into(), 1, updated()).is_err());
+        cache.import("two".into(), 1, updated()).unwrap();
+        assert!(root.path().join("catalog.json.bak").exists());
+    }
     fn server(status: &str, body: Vec<u8>) -> (String, std::thread::JoinHandle<()>) {
         let listener = TcpListener::bind("127.0.0.1:0").unwrap();
         let url = format!("http://{}/catalog.json", listener.local_addr().unwrap());

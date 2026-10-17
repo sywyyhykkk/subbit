@@ -8,32 +8,45 @@ Rust + Tauri 2 + Svelte 5. macOS and Windows. No account, server, or bundled bro
 
 ## Download and install
 
-Get [Subbit 0.0.3](https://github.com/sywyyhykkk/subbit/releases/tag/v0.0.3):
+Get [Subbit 0.0.4](https://github.com/sywyyhykkk/subbit/releases/tag/v0.0.4):
 
-- [macOS Apple Silicon DMG](https://github.com/sywyyhykkk/subbit/releases/download/v0.0.3/Subbit_0.0.3_macos-arm64.dmg): macOS 12+, Apple M-series chips.
-- [macOS Intel DMG](https://github.com/sywyyhykkk/subbit/releases/download/v0.0.3/Subbit_0.0.3_macos-x86_64.dmg): macOS 12+, Intel processors.
-- [Windows x64 setup EXE](https://github.com/sywyyhykkk/subbit/releases/download/v0.0.3/Subbit_0.0.3_windows-x64-setup.exe): Windows 10/11 on Intel/AMD. Run the installer, then launch from the Start menu.
+- [macOS Apple Silicon DMG](https://github.com/sywyyhykkk/subbit/releases/download/v0.0.4/Subbit_0.0.4_macos-arm64.dmg): macOS 12+, Apple M-series chips.
+- [macOS Intel DMG](https://github.com/sywyyhykkk/subbit/releases/download/v0.0.4/Subbit_0.0.4_macos-x86_64.dmg): macOS 12+, Intel processors.
+- [Windows x64 setup EXE](https://github.com/sywyyhykkk/subbit/releases/download/v0.0.4/Subbit_0.0.4_windows-x64-setup.exe): Windows 10/11 on Intel/AMD. Run the installer, then launch from the Start menu.
 
 On macOS, check Apple menu → About This Mac to identify your chip, choose the matching DMG, then drag Subbit into Applications.
 
-No development tools are required. Windows installs WebView2 over the internet if it is missing. Choose an installer rather than GitHub's “Source code” archives. This release is not publisher-signed or Apple-notarized, so Gatekeeper or SmartScreen may require confirmation at first launch. See the [release notes](docs/releases/0.0.3.md) for installation conditions and validation details.
+No development tools are required. Windows installs WebView2 over the internet if it is missing. Choose an installer rather than GitHub's “Source code” archives. This release is not publisher-signed or Apple-notarized, so Gatekeeper or SmartScreen may require confirmation at first launch. See the [release notes](docs/releases/0.0.4.md) for installation conditions and validation details.
 
-From 0.0.2, install 0.0.3 using **Settings → About → Check for updates**. When upgrading from 0.0.1, install 0.0.3 manually once.
+From 0.0.2 or 0.0.3, install 0.0.4 using **Settings → About → Check for updates**. When upgrading from 0.0.1, install 0.0.4 manually once.
+
 
 ## What it does
 
 - Menu bar / system tray overview and a standalone management window. Closing windows keeps the tray alive and releases their WebViews.
-- Hourly, monthly and yearly amortized **billed cost** and **personal cost** after reimbursement.
+- Hourly, daily, monthly and yearly amortized **billed cost** and **personal cost** after reimbursement.
 - Recurring purchases with an optional expiry date and calendar-aware automatic renewal. Turn off renewal to stop counting a subscription after its expiry day.
 - Lifetime purchases amortized over elapsed calendar days. As ownership time grows, average cost decreases.
 - Full, fixed-amount and percentage reimbursement; Apple App Store, Google Play, bank card, Alipay, WeChat Pay, PayPal, crypto and other payment methods.
-- 57 bundled services in 11 categories, including Spine for design and animation, and cloud servers from AWS, Google Cloud, Alibaba Cloud, Vultr, DigitalOcean, Hetzner, Tencent Cloud, Huawei Cloud, Microsoft Azure and OVHcloud. VPN is a generic category; custom names, plans and local icons are supported.
+- 57 bundled services in 12 categories, including Spine for design and animation, and cloud servers from AWS, Google Cloud, Alibaba Cloud, Vultr, DigitalOcean, Hetzner, Tencent Cloud, Huawei Cloud, Microsoft Azure and OVHcloud. VPN is a generic category; custom names, plans and local icons are supported.
 - 26 fiat currencies plus USDT, USDC, BTC, ETH and SOL. Automatic cached exchange rates, global fixed rates and a fixed acquisition rate per asset.
 - Chinese / English, system / light / dark appearance, configurable spending levels and optional launch at login.
 - Local JSON, backup before writes, selectable storage directory, import preview and full export including custom icons.
-- Five local stdio MCP tools for Agent-assisted import and querying.
+- Ten local stdio MCP tools for Agent-assisted import and querying.
 
 Verified fixed-price plans prefill a USD reference price and convert it to the selected currency using your fixed or cached exchange rate. Monthly and annual billing use their own published prices. You can edit the amount or choose a custom plan; saved bills remain unchanged. Usage-based cloud servers, custom quotes and plans without verified prices require manual entry. Regional pricing and taxes may differ from the reference. Subbit records costs; it never charges a card or renews a real service.
+
+## Domains and offline mode (0.0.4)
+
+Choose **Domains** when adding an asset. Each record represents one domain, with its own registrar, recurring price and renewal date. Annual billing is the default; multiple-year cycles are supported. Search matches both the domain and registrar. Existing assets are not migrated. Empty registrar fields are omitted; records containing the new field require 0.0.4 or later to read.
+
+After entering a domain, Subbit tries its website's favicon directly, without an icon aggregation service. A successful raster icon is resized and saved with the asset. Failed requests use a neutral globe; offline mode uses saved icons. Manual icons are preserved, and icon retrieval never blocks saving.
+
+Enable **Settings → General → Offline mode** after confirming its effects. It is off by default and stops network access for rates, catalogs, favicons, application updates and external links opened from Subbit. Active rate/catalog/icon requests are cancelled. Finish an in-progress application update operation before changing the mode. The policy is stored separately from assets, so importing a backup or selecting another asset file cannot disable it.
+
+Fixed rates take priority over cached quotes. Missing fiat rates fall back to the bundled, dated [Frankfurter snapshot](https://api.frankfurter.dev/v2/rates?base=USD) (2026-10-16 / 17); missing crypto rates still require a quote or fixed rate. Catalogs use the last valid local cache, then the bundled catalog. Data can be outdated while offline. Local editing, backup/export, cost calculations and stdio MCP continue to work. An external Agent's own network access is controlled by that Agent. Offline operation does not change Windows' WebView2 installation requirements.
+
+Agents can supply rate and catalog data through the new local preview/import tools without asking Subbit to download URLs. See [MCP data imports](docs/MCP.md#offline-rate-and-catalog-imports). Payment-method filters and sorting preferences are shared by the main window and tray panel; daily cost summaries are available in both.
 
 ## Development
 
@@ -71,19 +84,19 @@ Build outputs are in `src-tauri/target/release/bundle/`. CI builds native macOS 
 | Every N weeks / days | Price × 365 ÷ (7 × N) / Price × 365 ÷ N |
 | Lifetime purchase | Price ÷ elapsed days × 365 |
 
-Monthly = annual ÷ 12; hourly = annual ÷ 8,760. Lifetime elapsed days include the purchase date and have a one-day minimum. Future purchases, paused records and expired nonrenewing subscriptions do not contribute. These are average costs, not historical debit transactions or measured usage time.
+Daily = annual ÷ 365; monthly = annual ÷ 12; hourly = annual ÷ 8,760. Lifetime elapsed days include the purchase date and have a one-day minimum. Future purchases, paused records and expired nonrenewing subscriptions do not contribute. These are average costs, not historical debit transactions or measured usage time.
 
 Reimbursements apply to the original price and billing period before currency conversion. Fixed reimbursement cannot exceed the price; percentage must be 0–100. Amounts are decimal strings (up to 12 decimal places); Rust performs decimal arithmetic and display rounding happens only in the UI.
 
 The optional expiry date is an anchor. Without one, the first renewal is one billing cycle after the start date. Renewal always advances from the original anchor, preserving Jan 31 → Feb 28 → Mar 31 and leap-year boundaries. A subscription remains active on its expiry date and expires the next day. The saved anchor stays unchanged while the effective next date is computed on read, including after the app has been closed for months.
 
-For lifetime assets, the settings' hourly/monthly/yearly cost keeps decreasing as elapsed days increase. On the first day the annualized number can be large; this is an extrapolated average, not another upcoming charge.
+For lifetime assets, the settings' hourly/daily/monthly/yearly cost keeps decreasing as elapsed days increase. On the first day the annualized number can be large; this is an extrapolated average, not another upcoming charge.
 
 ## Storage and exchange rates
 
-The default file is the operating system's actual **Documents/Subbit/subscriptions.json**. The OS application configuration directory stores only the chosen location pointer and a lock file. Custom icons are resized to 96 × 96 and embedded as PNG data URLs, so backups are portable.
+The default file is the operating system's actual **Documents/Subbit/subscriptions.json**. The OS application configuration directory stores the location pointer, lock, offline-mode policy and catalog cache. Custom icons are resized to 96 × 96 and embedded as PNG data URLs, so backups are portable.
 
-Writes take a process-wide file lock shared by desktop and MCP processes, validate the complete data, preserve `subscriptions.json.bak`, fsync a same-directory temporary file and atomically replace the current file. Stale desktop edits are rejected. If a selected file disappears, Subbit shows its path instead of silently starting an empty library. Use **Locate existing data** to recover the file.
+Writes take a process-wide file lock shared by desktop and MCP processes, validate the complete data, preserve `subscriptions.json.bak`, fsync a same-directory temporary file and atomically replace the current file. Stale desktop edits are rejected. If a selected file disappears, Subbit shows its path instead of silently starting an empty library. Use **Choose existing data file** to recover the file.
 
 Import previews the record count, then replaces current data after an explicit click; the previous file is backed up. MCP appends batches instead, with duplicate detection and stable import receipts. Importing a backup never turns on MCP implicitly.
 
@@ -104,9 +117,12 @@ Subbit includes a local MCP server so an MCP-compatible Agent can read your subs
 | --- | --- |
 | `get_catalog` | Read services, plans, verified USD reference prices, currencies and the record schema |
 | `list_subscriptions` | Read saved subscriptions and their revision |
-| `get_summary` | Calculate hourly, monthly or yearly costs in a chosen currency |
+| `get_summary` | Calculate hourly, daily, monthly or yearly costs in a chosen currency |
 | `preview_import` | Validate a batch and report duplicates before writing |
 | `import_subscriptions` | Append a batch with a stable `importId` so retries do not duplicate it |
+| `get_exchange_rates` | Read local quotes, fixed overrides and revision |
+| `preview_exchange_rates` / `import_exchange_rates` | Validate and import supplied quotes locally |
+| `preview_catalog` / `import_catalog` | Validate and import a complete local catalog |
 
 Example request: “Use Subbit to summarize my monthly subscription costs in CNY.” For imports: “Read this bill, prepare Subbit records and show me the import preview before importing.” Amounts must come from your bill or an explicitly chosen reference price; MCP does not automatically fill missing fields or fetch exchange rates. Subbit stays local, but records returned to a cloud Agent are processed by that Agent.
 

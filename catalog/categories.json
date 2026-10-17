@@ -60,6 +60,12 @@
     "icon": "⌁"
   },
   {
+    "id": "domain",
+    "zh": "域名",
+    "en": "Domains",
+    "icon": "◎"
+  },
+  {
     "id": "other",
     "zh": "其他",
     "en": "Other",

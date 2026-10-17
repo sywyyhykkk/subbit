@@ -2,6 +2,8 @@ pub mod mcp;
 pub mod catalog;
 pub mod model;
 mod rates;
+pub mod network;
+mod favicon;
 pub mod store;
 pub mod view;
 use model::*;
@@ -22,12 +24,60 @@ pub(crate) fn init_tls() {
     let _ = rustls::crypto::ring::default_provider().install_default();
 }
 #[tauri::command]
+fn panel_ready(window: tauri::WebviewWindow, dark: bool) -> Result<()> {
+    if window.label() != "panel" { return Err("Panel window required".into()); }
+    let color = if dark { tauri::window::Color(28, 28, 30, 255) } else { tauri::window::Color(255, 255, 255, 255) };
+    window.set_background_color(Some(color)).map_err(|e| e.to_string())?;
+    window.show().map_err(|e| e.to_string())?;
+    window.set_focus().map_err(|e| e.to_string())
+}
+#[tauri::command]
+fn data_file_info() -> Result<Value> {
+    let path = Store::system()?.location()?;
+    let size = |path: &std::path::Path| -> Result<Option<u64>> {
+        match std::fs::metadata(path) {
+            Ok(metadata) => Ok(Some(metadata.len())),
+            Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(None),
+            Err(e) => Err(e.to_string()),
+        }
+    };
+    Ok(serde_json::json!({"data":size(&path)?,"backup":size(&path.with_extension("json.bak"))?}))
+}
+#[tauri::command]
+fn reveal_data(app: tauri::AppHandle) -> Result<()> {
+    use tauri_plugin_opener::OpenerExt;
+    let path = Store::system()?.location()?;
+    if path.exists() { app.opener().reveal_item_in_dir(path).map_err(|e| e.to_string()) }
+    else { app.opener().open_path(path.parent().ok_or("Invalid data path")?.to_string_lossy(), None::<&str>).map_err(|e| e.to_string()) }
+}
+#[tauri::command]
+async fn website_icon(domain: String, icon_url: Option<String>) -> Result<Value> {
+    tauri::async_runtime::spawn_blocking(move || favicon::fetch(&domain, icon_url.as_deref()))
+        .await.map_err(|e| e.to_string())?
+}
+#[tauri::command]
+fn offline_mode() -> Result<bool> { network::offline() }
+#[tauri::command]
+fn set_offline_mode(enabled: bool, app: tauri::AppHandle) -> Result<()> {
+    network::set_offline(enabled)?;
+    let _ = app.emit("network-changed", enabled);
+    Ok(())
+}
+#[tauri::command]
+fn require_online() -> Result<()> { network::require_online() }
+#[tauri::command]
 fn load_catalog() -> Result<catalog::CatalogState> {
-    Ok(catalog::CatalogCache::system()?.load())
+    let mut state = catalog::CatalogCache::system()?.load();
+    state.imports.clear();
+    Ok(state)
 }
 #[tauri::command]
 async fn refresh_catalog(force: bool) -> Result<catalog::CatalogState> {
-    tauri::async_runtime::spawn_blocking(move || catalog::CatalogCache::system()?.refresh(force))
+    tauri::async_runtime::spawn_blocking(move || {
+        let mut state = catalog::CatalogCache::system()?.refresh(force)?;
+        state.imports.clear();
+        Ok(state)
+    })
         .await.map_err(|e| e.to_string())?
 }
 #[tauri::command]
@@ -214,11 +264,10 @@ fn show_panel(app: &tauri::AppHandle, position: tauri::PhysicalPosition<f64>) ->
     let panel = window.clone();
     window.on_window_event(move |event| {
         if let tauri::WindowEvent::Focused(false) = event {
-            let _ = panel.destroy();
+            if panel.is_visible().unwrap_or(false) { let _ = panel.destroy(); }
         }
     });
-    window.show()?;
-    window.set_focus()?;
+    // The mounted frontend reveals this window only after local data and theme are ready.
     Ok(())
 }
 pub fn run() {
@@ -237,6 +286,13 @@ pub fn run() {
                 .build(),
         )
         .invoke_handler(tauri::generate_handler![
+            panel_ready,
+            data_file_info,
+            reveal_data,
+            website_icon,
+            offline_mode,
+            set_offline_mode,
+            require_online,
             load_catalog,
             refresh_catalog,
             snapshot,

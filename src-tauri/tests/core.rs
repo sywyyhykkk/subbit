@@ -139,12 +139,13 @@ fn reimbursement_limits_and_decimal_precision() {
 fn missing_rates_never_silently_zero_totals() {
     let mut db = Database::default();
     let mut s = sample();
-    s.currency = "USD".into();
+    s.currency = "USDT".into();
     db.subscriptions.push(s);
     let r = db.summary("CNY", "month", day("2026-10-16")).unwrap();
     assert!(r["bill"].is_null());
     assert_eq!(r["missingRates"][0], "one");
     db.settings.fixed_rates.insert("CNY".into(), "0.125".into());
+    db.settings.fixed_rates.insert("USDT".into(), "1".into());
     let r = db.summary("CNY", "month", day("2026-10-16")).unwrap();
     assert_eq!(r["bill"], "800");
 }
@@ -347,4 +348,40 @@ fn snapshot_detects_location_changes_and_does_not_hide_missing_files() {
     let key = snapshot_key(&store);
     std::fs::remove_file(destination.join("subscriptions.json")).unwrap();
     assert!(subbit_lib::view::load(&store, Some("CNY"), Some("month"), Some(&key), key.day).is_err());
+}
+
+#[test]
+fn domain_records_preserve_legacy_data_and_validate_registrars() {
+    let original = sample();
+    assert!(original.registrar.is_none());
+    assert!(serde_json::to_value(&original).unwrap().get("registrar").is_none());
+    let mut domain = original.clone();
+    domain.category = "domain".into();
+    domain.name = "example.com".into();
+    domain.registrar = Some("Example Registrar".into());
+    domain.validate().unwrap();
+    let (dir, store) = store();
+    store.save(domain.clone(), 0).unwrap();
+    assert_eq!(store.read().unwrap().0.subscriptions[0], domain);
+    assert!(dir.path().join("subscriptions.json.bak").exists());
+    for name in ["https://example.com", "example.com/path", "127.0.0.1", "-bad.com", "a..com"] {
+        domain.name = name.into();
+        assert!(domain.validate().is_err(), "{name}");
+    }
+    domain.name = "例子.中国".into();
+    domain.validate().unwrap();
+    domain.kind = "lifetime".into();
+    assert!(domain.validate().is_err());
+}
+
+#[test]
+fn daily_costs_match_annual_costs_and_allow_default_period() {
+    let mut db = Database::default();
+    let mut asset = sample(); asset.amount = "365".into(); asset.reimbursement = "full".into();
+    db.subscriptions.push(asset);
+    db.settings.period = "day".into(); db.validate().unwrap();
+    let result = db.summary("CNY", "day", day("2026-10-18")).unwrap();
+    assert_eq!(result["bill"], "1");
+    assert_eq!(result["actual"], "0");
+    assert_eq!(result["reimbursed"], "1");
 }

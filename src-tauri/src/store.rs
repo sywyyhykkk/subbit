@@ -60,7 +60,7 @@ impl Store {
         f.lock_exclusive().map_err(|e| e.to_string())?;
         Ok(f)
     }
-    fn location(&self) -> Result<PathBuf> {
+    pub(crate) fn location(&self) -> Result<PathBuf> {
         let config = self.root.join("location.json");
         if config.exists() {
             let p: PathBuf = serde_json::from_slice(&fs::read(config).map_err(|e| e.to_string())?)

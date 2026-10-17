@@ -21,13 +21,13 @@ On Windows use the installed `subbit.exe` path. MCP uses stdio JSON-RPC and the 
 | `list_subscriptions` | Current original records and revision |
 | `preview_import` | Validate records; report added, skipped and possible duplicate IDs |
 | `import_subscriptions` | Atomically append a batch with a stable `importId` |
-| `get_summary` | `currency` and `period` (`hour`, `month`, `year`) cost summary |
+| `get_summary` | `currency` and `period` (`hour`, `day`, `month`, `year`) cost summary |
 
 Read the catalog/schema first. Generate stable record IDs, preserve original currencies and decimal strings, and do not guess missing amounts. Always preview. Import retries must reuse the same `importId` and identical records. Identical record IDs are skipped; conflicting IDs reject the whole batch. Matching service names with different IDs require `allowDuplicates: true`, for intentional separate accounts.
 
 Catalog `prices` are optional reference prices, not saved bills. Each quote has `amountUsd` and, for recurring purchases, a `cycleUnit` and optional `cycleCount` (default 1). Yearly quotes contain the full annual charge. Check `priceSource`, `priceReviewedAt` and `priceBasis` before using a quote; per-seat amounts cover one seat. Only use a reference price when the user chooses it. MCP imports still require complete records and do not automatically apply catalog prices or currency conversion.
 
-`get_catalog` shares the desktop's cached directory, including embedded icon data URLs in `catalog.icons` keyed by the service's `icon` path. It checks for a remote update at most once per 15 minutes, with a 15-second request timeout. On failure it returns the last complete cache, or the built-in catalog if no usable cache exists. Catalog refresh does not modify the asset database or revision and needs no app release for compatible directory changes.
+`get_catalog` shares the desktop's cached directory, including embedded icon data URLs in `catalog.icons` keyed by the service's `icon` path. When offline mode is off, it checks for a remote update at most once per 15 minutes, with a 15-second request timeout. On failure it returns the last complete cache, or the built-in catalog if no usable cache exists. Catalog refresh does not modify the asset database or revision and needs no app release for compatible directory changes.
 
 All tools check the enabled setting on every call. Desktop and MCP use the same file lock, validation, atomic replacement and backup. Foreground windows refresh within 15 seconds or when focused. No polling occurs when the interface is closed.
 
@@ -41,7 +41,7 @@ Data returned to a cloud Agent is processed by that Agent, even though Subbit it
 
 ## Example import record
 
-All fields in `catalog/subscription.schema.json` are required; optional values use `null` or an empty string. For example:
+Use the required fields listed in `catalog/subscription.schema.json`; `registrar` is optional, and nullable values may use `null`. For example:
 
 ```json
 {
@@ -69,3 +69,20 @@ All fields in `catalog/subscription.schema.json` are required; optional values u
 ```
 
 Pass it as `{"records":[...]}` to `preview_import`, then `{"importId":"stable-batch-id","records":[...]}` to `import_subscriptions`.
+
+
+## Offline rate and catalog imports
+
+These tools receive data directly and never fetch a supplied URL. Enable MCP in the GUI first. The application offline policy is shared with MCP and survives asset-file replacement. `get_catalog` reads only local data while offline. Agents manage their own network access independently.
+
+| Tool | Arguments and result |
+| --- | --- |
+| `get_exchange_rates` | No arguments. Returns effective local `rates`, `fixedRates`, database `revision`, `bundledSource` and `offline`. |
+| `preview_exchange_rates` | `{ "rates": { "CNY": { "usd": "0.14", "asOf": "2026-10-18T00:00:00Z" } } }`; returns the database revision. Values are illustrative; use verified quotes. |
+| `import_exchange_rates` | The same `rates`, a stable `importId`, and the preview's `revision`. Updates cache quotes while preserving fixed rates and assets. |
+| `preview_catalog` | `{ "catalog": ... }`, using the complete catalog shape returned by `get_catalog`, including embedded icons. Returns catalog revision and counts. |
+| `import_catalog` | The same `catalog`, a stable `importId`, and the preview's `revision`. Replaces the local catalog cache, not saved assets. |
+
+Rate imports require supported currency codes, positive decimal-string USD-per-unit quotes, RFC3339 timestamps, and USD = 1 if supplied. The bundled fallback has source dates only and is not a live quote. Catalog and database revisions are separate: always use the corresponding preview result. Stale revisions fail; retrying an identical import ID and payload is safe, while reusing an ID with different data fails. Imports keep write locks, atomic replacement and previous-file backups. Catalogs also retain import receipts and their own `.bak`.
+
+Domain imports use `category: "domain"`, the hostname in `name`, optional `registrar`, and `kind: "recurring"`. Use one record per domain. MCP does not fetch favicons; a supplied raster data URL can be stored in `icon`, otherwise the GUI shows the globe fallback.

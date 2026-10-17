@@ -9,6 +9,8 @@ with tempfile.TemporaryDirectory(prefix='subbit-mcp-') as root:
  cache=pathlib.Path(root)/'catalog-cache';cache.mkdir()
  # Keep this smoke check offline and independent of the published directory.
  (cache/'checked.json').write_text(json.dumps(int(time.time())))
+ (pathlib.Path(root)/'offline.json').write_text('true')
+ assert (data/'subscriptions.json').resolve().is_relative_to(pathlib.Path(root).resolve())
  p=subprocess.Popen([str(binary),'--mcp'],stdin=subprocess.PIPE,stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,encoding='utf-8',env={**os.environ,'SUBBIT_CONFIG_DIR':root})
  def request(id,method,params=None):
   p.stdin.write(json.dumps({'jsonrpc':'2.0','id':id,'method':method,'params':params or {}})+'\n');p.stdin.flush()
@@ -21,7 +23,7 @@ with tempfile.TemporaryDirectory(prefix='subbit-mcp-') as root:
  assert initialized['protocolVersion']=='2025-11-25'
  assert initialized['serverInfo']['version']==json.loads((repo/'package.json').read_text(encoding='utf-8'))['version']
  p.stdin.write('{"jsonrpc":"2.0","method":"notifications/initialized"}\n');p.stdin.flush()
- assert len(request(2,'tools/list')['tools'])==5
+ assert len(request(2,'tools/list')['tools'])==10
  catalog=call(3,'get_catalog')['catalog']
  expected_services=[json.loads(path.read_text(encoding='utf-8')) for path in sorted((repo/'catalog'/'services').glob('*.json'))]
  assert catalog['services']==expected_services
@@ -38,7 +40,18 @@ with tempfile.TemporaryDirectory(prefix='subbit-mcp-') as root:
  assert len(call(8,'list_subscriptions')['subscriptions'])==1
  total=call(9,'get_summary',{'currency':'CNY','period':'month'})
  assert total['bill']=='100' and total['actual']=='50',total
+ rates={'CNY':{'usd':'0.14','asOf':'2026-10-18T00:00:00Z'}}
+ rate_preview=call(40,'preview_exchange_rates',{'rates':rates})
+ assert call(41,'import_exchange_rates',{'rates':rates,'revision':rate_preview['revision'],'importId':'rates-1'})['updated']==1
+ assert call(42,'import_exchange_rates',{'rates':rates,'revision':rate_preview['revision'],'importId':'rates-1'})['replayed']
+ assert call(43,'get_exchange_rates')['rates']['CNY']['usd']=='0.14'
+ directory_preview=call(44,'preview_catalog',{'catalog':catalog})
+ directory_result=call(45,'import_catalog',{'catalog':catalog,'revision':directory_preview['revision'],'importId':'catalog-1'})
+ assert call(46,'import_catalog',{'catalog':catalog,'revision':directory_preview['revision'],'importId':'catalog-1'})['revision']==directory_result['revision']
+ assert (cache/'catalog.json.bak').exists()
+ assert call(47,'get_exchange_rates')['offline']
+ assert call(48,'get_summary',{'currency':'CNY','period':'day'})['bill'] is not None
  p.stdin.close();p.wait(timeout=10);assert p.returncode==0,p.stderr.read()
  assert json.loads((data/'subscriptions.json').read_text(encoding='utf-8'))['subscriptions'][0]['paymentMethod']=='card'
  assert (data/'subscriptions.json.bak').exists()
- print('MCP smoke passed: initialize, catalog, preview, import, retry, list, summary, persisted backup.')
+ print('MCP smoke passed: initialize, catalog, preview, import, retry, list, summary, persisted backup, offline rates/catalog imports and daily costs.')

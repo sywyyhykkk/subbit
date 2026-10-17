@@ -1,6 +1,6 @@
 [package]
 name = "subbit"
-version = "0.0.3"
+version = "0.0.4"
 description = "A small, local-first subscription companion"
 authors = ["mango"]
 edition = "2021"
@@ -34,6 +34,7 @@ rustls = { version = "0.23", default-features = false, features = ["ring", "std"
 tauri-plugin-opener = "2"
 tauri-plugin-updater = "2"
 tauri-plugin-process = "2"
+tokio = { version = "1", features = ["time"] }
 
 [profile.release]
 codegen-units = 1

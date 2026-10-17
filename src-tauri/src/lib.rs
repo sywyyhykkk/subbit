@@ -168,7 +168,7 @@ fn show_main(app: &tauri::AppHandle, action: &str) -> tauri::Result<()> {
         ),
     )
     .title("Subbit")
-    .inner_size(880., 720.)
+    .inner_size(880., 780.)
     .min_inner_size(620., 520.)
     .center()
     .build()?;
@@ -187,7 +187,7 @@ fn show_panel(app: &tauri::AppHandle, position: tauri::PhysicalPosition<f64>) ->
     let window =
         WebviewWindowBuilder::new(app, "panel", WebviewUrl::App("index.html?panel=1".into()))
             .title("Subbit")
-            .inner_size(400., 590.)
+            .inner_size(400., 650.)
             .decorations(false)
             .resizable(false)
             .always_on_top(true)
@@ -207,7 +207,7 @@ fn show_panel(app: &tauri::AppHandle, position: tauri::PhysicalPosition<f64>) ->
         let p = m.position();
         let s = m.size();
         let width = 400. * scale;
-        let height = 590. * scale;
+        let height = 650. * scale;
         let x = (position.x - width / 2.)
             .max(p.x as f64 + 8.)
             .min(p.x as f64 + s.width as f64 - width - 8.);

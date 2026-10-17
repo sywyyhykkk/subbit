@@ -3,6 +3,7 @@
   import Icon from "./Icon.svelte";
   import DatePicker from "./DatePicker.svelte";
   import { nextCycle } from "./dates";
+  import { localizeLevelName } from "./levels";
   import { getVersion } from "@tauri-apps/api/app";
   import { openUrl } from "@tauri-apps/plugin-opener";
   import { check, type Update } from "@tauri-apps/plugin-updater";
@@ -80,6 +81,7 @@
   const activeTheme = $derived.by(() => modal === "settings" ? prefs.theme : snap?.database.settings.theme ?? "system");
   const dark = $derived(activeTheme === "dark" || (activeTheme === "system" && systemDark));
   const tr = (zh: string, english: string) => (en ? english : zh);
+  const spendingLevelName = $derived.by(() => snap?.level ? localizeLevelName(snap.level, en) : tr("尚未达到等级", "No level yet"));
   const labels = $derived({
     addAsset: tr("新增资产", "Add asset"),
     personalCost: tr("实际花销", "Personal cost"),
@@ -360,13 +362,14 @@
   function applyPlan(plan: Service["plans"][number] | undefined) {
     autoPrice = !!plan;
     record.plan = plan?.name ?? "";
-    record.amount = "";
     if (plan) {
       record.kind = plan.kind;
       record.cycleUnit = plan.prices?.[0]?.cycleUnit ?? plan.cycleUnit ?? "month";
       record.cycleCount = plan.prices?.[0]?.cycleCount ?? 1;
       setKind();
     }
+    const nextQuote = presetQuote(plan, record, snap?.database);
+    record.amount = nextQuote.status === "ready" ? nextQuote.amount : "";
   }
   async function submit() {
     await action(async () => {
@@ -664,23 +667,22 @@
 <div class:panel class="shell">
   <main>
     <header class="page-header">
-      <div class="page-title"><h1>Subbit</h1><span>{tr("数字资产", "Digital assets")}</span></div>
+      <div class="page-title"><h1>Subbit</h1>{#if snap?.database.settings.showLevel}<span class="level" title={spendingLevelName}>{spendingLevelName}</span>{/if}</div>
       <div class="header-actions">
         {#if !panel}<button class="icon-button" aria-label={tr("设置", "Settings")} title={tr("设置", "Settings")} onclick={settings}><Icon name="settings"/></button>{/if}
         <button class="primary" onclick={picker}><Icon name="plus"/>{labels.addAsset}</button>
       </div>
     </header>
     <section class="overview" aria-label={tr("成本总览", "Cost overview")}>
-      <div class="overview-heading"><span>{tr("全部资产的均摊成本", "Average cost of all assets")}</span>
+      <div class="overview-heading">
         <div class="controls"><select aria-label={tr("显示币种", "Display currency")} bind:value={currency} onchange={() => reload()}>{#each currencies.slice(0, 26) as c}<option>{c}</option>{/each}</select>
           <div class="segmented">{#each ["hour", "month", "year"] as unit}<button class:active={period === unit} aria-pressed={period === unit} onclick={() => {period = unit; void reload();}}>{tr("每", "/")}{unitLabel(unit)}</button>{/each}</div>
         </div>
       </div>
       <div class="summary-grid">
-        <div class="personal"><div class="card-label">{labels.personalCost}</div><div class="amount">{money(snap?.summary.actual)}<small>/ {unitLabel(period)}</small></div><div class="card-foot">{tr("报销后个人承担", "After reimbursement")}</div></div>
+        <div class="personal"><div class="card-label">{labels.personalCost}</div><div class="amount">{money(snap?.summary.actual)}<small>/ {unitLabel(period)}</small></div></div>
         <div class="secondary-costs"><div class="bill"><div class="card-label">{labels.billedCost}</div><div class="secondary-amount">{money(snap?.summary.bill)}</div></div><div class="reimbursed"><div class="card-label">{tr("报销抵扣", "Reimbursed")}</div><div class="secondary-amount">{money(snap?.summary.reimbursed)}</div></div></div>
       </div>
-      {#if snap?.database.settings.showLevel}<div class="spending-level"><span class="level">{snap.level ?? tr("尚未达到等级", "No level yet")}</span><span>{tr("等级依据：", "Based on: ")}{snap.database.settings.levelBasis === "bill" ? labels.billedCost : labels.personalCost} · {tr("人民币月均", "monthly CNY")}</span></div>{/if}
     </section>
     {#if snap?.summary.missingRates.length}<div class="banner warning">{tr("部分币种缺少汇率，总额暂不可用。", "Some exchange rates are missing.")}<button onclick={settings}>{tr("设置", "Settings")}</button></div>{/if}
     {#if !isTauri()}<div class="banner">{tr("界面预览 · 本地数据功能请在桌面应用中使用", "Interface preview · Local data features require the desktop app")}</div>{/if}
@@ -715,14 +717,6 @@
               ? tr("没有匹配的资产", "No matching assets")
               : tr("还没有数字资产", "No assets yet")}
           </h2>
-          <p>
-            {entries.length
-              ? tr("试试其他分类或关键词。", "Try another category or search.")
-              : tr(
-                  "从第一份订阅开始，看看每一笔花销去了哪里。",
-                  "Start with a subscription and see where it all goes.",
-                )}
-          </p>
           {#if entries.length}<button onclick={() => { category = "all"; filter = "all"; search = ""; }}>{tr("清除筛选", "Clear filters")}</button>
           {:else}<button class="primary" onclick={picker}><Icon name="plus"/>{labels.addAsset}</button>{/if}
         </div>
@@ -765,8 +759,8 @@
                           "已到期",
                           "Expired",
                         )}{:else if item.kind === "lifetime"}{tr(
-                      `已拥有 ${cost.elapsedDays} 天 · 成本逐日降低`,
-                      `Owned ${cost.elapsedDays} days · cost decreases daily`,
+                      `已拥有 ${cost.elapsedDays} 天`,
+                      `Owned ${cost.elapsedDays} days`,
                     )}{:else}{cost?.dueDate}
                     {item.autoRenew
                       ? tr("续期", "renews")
@@ -778,16 +772,12 @@
                 ></span
               >
               <span class="asset-cost"
-                ><strong>{money(cost?.actual)}</strong><span
-                  >{item.reimbursement !== "none"
-                    ? tr("报销后个人承担", "After reimbursement")
-                    : tr("均摊成本", "Average cost")}</span
-                ></span
+                ><strong>{money(cost?.actual)}</strong></span
               ><span class="chevron"><Icon name="chevron" size={16}/></span>
             </button>{/each}
         </div>{/if}
     </section>
-    <footer><span>{filtered.length} / {entries.length} {tr("项资产", "assets")}<span class="footer-separator">·</span>{tr("已保存到本地", "Saved locally")}</span>{#if panel}<button onclick={() => call("open_main")}>{labels.openApp}<Icon name="arrow" size={16}/></button>{:else}<span>{tr("当前成本折算，非扣款流水", "Amortized cost, not transactions")}</span>{/if}</footer>
+    <footer><span>{filtered.length} / {entries.length} {tr("项资产", "assets")}</span>{#if panel}<button onclick={() => call("open_main")}>{labels.openApp}<Icon name="arrow" size={16}/></button>{/if}</footer>
   </main>
 </div>
 
@@ -999,7 +989,6 @@
             {#if quote.status === "missing-rate"}
               <span>{tr("缺少有效汇率，请在更多选项填写固定汇率，或手动输入金额。", "Exchange rate unavailable. Set a fixed rate under More options or enter the amount manually.")}</span>
             {:else}
-              <span>{tr("按美元标价换算，税费及地区定价以实际账单为准，可直接修改。", "Converted from USD list price. Regional prices and taxes may differ; edit to match your bill.")}</span>
               {#if !autoPrice}<button type="button" onclick={() => (autoPrice = true)}>{tr("使用参考价", "Use reference price")}</button>{/if}
             {/if}
           {/if}
@@ -1230,7 +1219,8 @@
                 bind:value={level.above}
               /><input
                 aria-label={tr("等级名称", "Level name")}
-                bind:value={level.name}
+                value={localizeLevelName(level.name, en)}
+                oninput={(event) => level.name = event.currentTarget.value}
               /><button aria-label={tr("删除等级", "Delete level")} onclick={() => prefs.levels.splice(i, 1)}><Icon name="close" size={16}/></button>
             </div>{/each}<button
             onclick={() => prefs.levels.push({ above: "100", name: "" })}
@@ -1320,10 +1310,7 @@
                   >{/if}
               </div>{/if}{/each}
         </div>
-      {:else if settingsTab === "data"}<h3>
-          {tr("你的数据，随你带走", "Your data goes with you")}
-        </h3>
-        <p class="hint">
+      {:else if settingsTab === "data"}<p class="hint">
           {tr(
             "所有资产、设置、自定义图标与汇率都保存在一个 JSON 文件中。每次修改保留上一份 .bak 备份。",
             "Assets, settings, custom icons and exchange rates live in one JSON file. Every write keeps the previous .bak backup.",

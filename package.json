@@ -11,7 +11,8 @@
     "catalog:check": "node scripts/check-catalog.mjs",
     "catalog:bundle": "node scripts/build-catalog.mjs",
     "test:pricing": "node --test scripts/pricing.test.mjs",
-    "test:dates": "node --test scripts/dates.test.mjs"
+    "test:dates": "node --test scripts/dates.test.mjs",
+    "test:levels": "node --test scripts/levels.test.mjs"
   },
   "keywords": [],
   "author": "mango",

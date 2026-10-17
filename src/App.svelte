@@ -69,6 +69,9 @@
   let record: Subscription = $state(blank());
   let planPresetId = $state("");
   let autoPrice = $state(false);
+  let iconRequest = 0;
+  let fetchedIcon: string | null = null;
+  let fetchedDomain = "";
   let editRevision = 0;
   let prefs: Settings = $state(structuredClone(defaultSettings));
   let settingsRevision = 0,
@@ -317,6 +320,7 @@
     modal = "picker";
   }
   function choose(service?: Service, custom?: Subscription) {
+    iconRequest++; fetchedIcon = null; fetchedDomain = "";
     record = blank();
     record.currency = en ? "USD" : "CNY";
     if (service) {
@@ -343,6 +347,7 @@
     modal = "editor";
   }
   function edit(s: Subscription) {
+    iconRequest++; fetchedIcon = null; fetchedDomain = "";
     if (panel) {
       void call("open_main");
       return;
@@ -440,8 +445,43 @@
       }
     });
   }
+  async function fetchDomainIcon() {
+    if (record.category !== "domain" || offline || !isTauri()) return;
+    const domain = record.name.trim();
+    if (fetchedIcon && fetchedDomain !== domain && record.icon === fetchedIcon) record.icon = null;
+    if (record.icon || !domain.includes(".") || /[/:@?#\s]/.test(domain)) return;
+    const request = ++iconRequest, id = record.id;
+    const current = () => request === iconRequest && modal === "editor" && record.id === id && record.category === "domain" && record.name.trim() === domain && !record.icon && !offline;
+    let links: string[] = [];
+    try {
+      const page = await call<{url: string; html: string}>("website_icon", { domain, iconUrl: null });
+      // Parse an inert document; never insert website HTML into the application.
+      const template = document.createElement("template");
+      template.innerHTML = page.html;
+      const doc = template.content;
+      links = Array.from(doc.querySelectorAll<HTMLLinkElement>('link[rel]'))
+        .filter((link) => link.rel.toLowerCase().split(/\s+/).some((rel) => rel === "icon" || rel === "apple-touch-icon"))
+        .flatMap((link) => { try { const url = new URL(link.getAttribute("href") ?? "", page.url); return url.protocol === "https:" ? [url.href] : []; } catch { return []; } }).slice(0, 3);
+    } catch { /* Root favicon remains a fallback when the page cannot be parsed. */ }
+    for (const iconUrl of [...new Set([...links, `https://${domain}/favicon.ico`])]) {
+      if (!current()) return;
+      try {
+        const { data } = await call<{data: string}>("website_icon", { domain, iconUrl });
+        if (!current()) return;
+        const image = new Image(); image.src = data; await image.decode();
+        if (!current()) return;
+        const canvas = document.createElement("canvas"); canvas.width = canvas.height = 96;
+        const size = Math.max(image.naturalWidth, image.naturalHeight);
+        if (!size) continue;
+        canvas.getContext("2d")!.drawImage(image, (96 - image.naturalWidth / size * 96) / 2, (96 - image.naturalHeight / size * 96) / 2, image.naturalWidth / size * 96, image.naturalHeight / size * 96);
+        fetchedIcon = canvas.toDataURL("image/png"); fetchedDomain = domain; record.icon = fetchedIcon;
+        return;
+      } catch { /* Keep the globe when a site does not expose a supported favicon. */ }
+    }
+  }
   async function uploadIcon(file?: File) {
     if (!file) return;
+    iconRequest++; fetchedIcon = null; fetchedDomain = "";
     await action(async () => {
       if (!["image/png", "image/jpeg", "image/webp"].includes(file.type))
         throw new Error(
@@ -939,6 +979,7 @@
               required
               maxlength="100"
               bind:value={record.name}
+              onblur={() => void fetchDomainIcon()}
               placeholder={record.category === "domain" ? "example.com" : tr("服务或软件名称", "Service or software name")}
             /></label
           >

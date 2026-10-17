@@ -3,6 +3,7 @@ pub mod catalog;
 pub mod model;
 mod rates;
 pub mod network;
+mod favicon;
 pub mod store;
 pub mod view;
 use model::*;
@@ -21,6 +22,11 @@ pub fn catalog() -> Value {
 }
 pub(crate) fn init_tls() {
     let _ = rustls::crypto::ring::default_provider().install_default();
+}
+#[tauri::command]
+async fn website_icon(domain: String, icon_url: Option<String>) -> Result<Value> {
+    tauri::async_runtime::spawn_blocking(move || favicon::fetch(&domain, icon_url.as_deref()))
+        .await.map_err(|e| e.to_string())?
 }
 #[tauri::command]
 fn offline_mode() -> Result<bool> { network::offline() }
@@ -254,6 +260,7 @@ pub fn run() {
                 .build(),
         )
         .invoke_handler(tauri::generate_handler![
+            website_icon,
             offline_mode,
             set_offline_mode,
             require_online,

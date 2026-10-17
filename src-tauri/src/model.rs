@@ -257,7 +257,7 @@ impl Default for Settings {
 impl Settings {
     pub fn validate(&self) -> Result<()> {
         if !CURRENCIES[..26].contains(&self.currency.as_str())
-            || !["hour", "month", "year"].contains(&self.period.as_str())
+            || !["hour", "day", "month", "year"].contains(&self.period.as_str())
             || !["system", "zh", "en"].contains(&self.language.as_str())
             || !["system", "light", "dark"].contains(&self.theme.as_str())
             || !["actual", "bill"].contains(&self.level_basis.as_str())
@@ -377,6 +377,7 @@ impl Database {
         }
         let divisor = match period {
             "hour" => Decimal::from(8760),
+            "day" => Decimal::from(365),
             "month" => Decimal::from(12),
             "year" => Decimal::ONE,
             _ => return Err("Invalid period".into()),

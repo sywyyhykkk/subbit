@@ -373,3 +373,15 @@ fn domain_records_preserve_legacy_data_and_validate_registrars() {
     domain.kind = "lifetime".into();
     assert!(domain.validate().is_err());
 }
+
+#[test]
+fn daily_costs_match_annual_costs_and_allow_default_period() {
+    let mut db = Database::default();
+    let mut asset = sample(); asset.amount = "365".into(); asset.reimbursement = "full".into();
+    db.subscriptions.push(asset);
+    db.settings.period = "day".into(); db.validate().unwrap();
+    let result = db.summary("CNY", "day", day("2026-10-18")).unwrap();
+    assert_eq!(result["bill"], "1");
+    assert_eq!(result["actual"], "0");
+    assert_eq!(result["reimbursed"], "1");
+}

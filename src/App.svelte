@@ -788,7 +788,7 @@
     <section class="overview" aria-label={tr("成本总览", "Cost overview")}>
       <div class="overview-heading">
         <div class="controls"><select aria-label={tr("显示币种", "Display currency")} bind:value={currency} onchange={() => reload()}>{#each currencies.slice(0, 26) as c}<option>{c}</option>{/each}</select>
-          <div class="segmented">{#each ["hour", "month", "year"] as unit}<button class:active={period === unit} aria-pressed={period === unit} onclick={() => {period = unit; void reload();}}>{tr("每", "/")}{unitLabel(unit)}</button>{/each}</div>
+          <div class="segmented">{#each ["hour", "day", "month", "year"] as unit}<button class:active={period === unit} aria-pressed={period === unit} onclick={() => {period = unit; void reload();}}>{tr("每", "/")}{unitLabel(unit)}</button>{/each}</div>
         </div>
       </div>
       <div class="summary-grid">
@@ -1296,7 +1296,7 @@
             ></label
           ><label
             >{tr("默认统计周期", "Default summary period")}<select bind:value={prefs.period}
-              >{#each ["hour", "month", "year"] as unit}<option value={unit}
+              >{#each ["hour", "day", "month", "year"] as unit}<option value={unit}
                   >{unitLabel(unit)}</option
                 >{/each}</select
             ></label

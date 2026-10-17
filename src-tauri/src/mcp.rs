@@ -28,7 +28,7 @@ fn tools() -> Value {
         tool("list_subscriptions","Read saved records with original amounts, currencies and expiry anchors.",empty,true),
         tool("preview_import","Validate records and identify duplicate IDs / possible duplicate names without writing.",batch,true),
         tool("import_subscriptions","Import a validated batch atomically. Preview first. Same IDs are skipped; conflicting IDs fail. Set allowDuplicates only for intentional separate accounts.",import,false),
-        tool("get_summary","Read amortized bill and personal costs. Lifetime costs use elapsed calendar days, including purchase day. Missing FX leaves totals null.",json!({"type":"object","properties":{"currency":{"type":"string"},"period":{"enum":["hour","month","year"]}},"additionalProperties":false}),true)
+        tool("get_summary","Read amortized bill and personal costs. Lifetime costs use elapsed calendar days, including purchase day. Missing FX leaves totals null.",json!({"type":"object","properties":{"currency":{"type":"string"},"period":{"enum":["hour","day","month","year"]}},"additionalProperties":false}),true)
     ]})
 }
 fn call(name: &str, args: Value) -> Result<Value> {

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, tick } from "svelte";
   import Icon from "./Icon.svelte";
   import ReleaseNotes from "./ReleaseNotes.svelte";
   import { localTimestamp, bytesLabel } from "./display";
@@ -735,6 +735,12 @@
     void (async () => {
       await loadDirectory().catch(() => {});
       await reload(true);
+      if (panel && isTauri()) {
+        await tick();
+        // Hidden WebViews may pause animation frames; flush DOM layout before revealing.
+        document.documentElement.getBoundingClientRect();
+        await call("panel_ready", { dark });
+      }
       if (new URLSearchParams(location.search).has("settings")) await settings();
       if (new URLSearchParams(location.search).has("about")) { await settings(); settingsTab = "about"; }
       if (isTauri()) {

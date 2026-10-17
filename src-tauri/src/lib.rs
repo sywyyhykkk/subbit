@@ -24,6 +24,14 @@ pub(crate) fn init_tls() {
     let _ = rustls::crypto::ring::default_provider().install_default();
 }
 #[tauri::command]
+fn panel_ready(window: tauri::WebviewWindow, dark: bool) -> Result<()> {
+    if window.label() != "panel" { return Err("Panel window required".into()); }
+    let color = if dark { tauri::window::Color(28, 28, 30, 255) } else { tauri::window::Color(255, 255, 255, 255) };
+    window.set_background_color(Some(color)).map_err(|e| e.to_string())?;
+    window.show().map_err(|e| e.to_string())?;
+    window.set_focus().map_err(|e| e.to_string())
+}
+#[tauri::command]
 fn data_file_info() -> Result<Value> {
     let path = Store::system()?.location()?;
     let size = |path: &std::path::Path| -> Result<Option<u64>> {
@@ -256,11 +264,10 @@ fn show_panel(app: &tauri::AppHandle, position: tauri::PhysicalPosition<f64>) ->
     let panel = window.clone();
     window.on_window_event(move |event| {
         if let tauri::WindowEvent::Focused(false) = event {
-            let _ = panel.destroy();
+            if panel.is_visible().unwrap_or(false) { let _ = panel.destroy(); }
         }
     });
-    window.show()?;
-    window.set_focus()?;
+    // The mounted frontend reveals this window only after local data and theme are ready.
     Ok(())
 }
 pub fn run() {
@@ -279,6 +286,7 @@ pub fn run() {
                 .build(),
         )
         .invoke_handler(tauri::generate_handler![
+            panel_ready,
             data_file_info,
             reveal_data,
             website_icon,

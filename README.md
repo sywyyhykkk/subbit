@@ -93,12 +93,12 @@ Billing currency is distinct from payment method: a USD-priced subscription paid
 
 ## Use Subbit with an Agent (MCP)
 
-Subbit includes a local MCP server so an MCP-compatible Agent can read your subscriptions, summarize costs and import records from information you provide. It runs as `subbit --mcp` over stdio, using the same local data as the desktop app, without opening a window or network port.
+Subbit includes a local MCP server so an MCP-compatible Agent can read your subscriptions, summarize costs and import records from information you provide. Once configured, your Agent client automatically starts the server by launching the Subbit executable with the `--mcp` argument. **You do not need to run a command manually in a terminal.** The server communicates over stdio, using the same local data as the desktop app, without opening a window or network port.
 
 1. Install or move Subbit to its final location, then open it.
 2. Open **Settings → Agent / MCP**, enable MCP and save.
 3. Copy the generated configuration into your Agent client's MCP configuration. It contains the executable's actual path and `args: ["--mcp"]`; adapt the format if your client requires it. On Windows, the command points to `subbit.exe`.
-4. Reconnect the Agent client. Ask it to read the catalog and your current subscriptions before importing anything.
+4. Reconnect the Agent client; it will automatically start the MCP server using the configuration. Then make requests in natural language. Before importing anything, ask the Agent to read the catalog and your current subscriptions.
 
 | Tool | What the Agent can do |
 | --- | --- |

@@ -67,12 +67,12 @@ npm run tauri build -- --config '{"bundle":{"createUpdaterArtifacts":false}}'
 
 ## 给 Agent 使用：MCP 接入
 
-Subbit 内置本地 MCP 服务，让支持 MCP 的 Agent 读取订阅、汇总成本，或根据你提供的账单批量导入记录。服务通过 `subbit --mcp` 启动，使用 stdio 通信，与桌面应用共享本地数据，不打开窗口或网络端口。
+Subbit 内置本地 MCP 服务，让支持 MCP 的 Agent 读取订阅、汇总成本，或根据你提供的账单批量导入记录。配置完成后，Agent 客户端会自动执行 Subbit 可执行文件并传入 `--mcp` 参数来启动服务，**无需手动在终端运行命令**。服务使用 stdio 通信，与桌面应用共享本地数据，不打开窗口或网络端口。
 
 1. 将 Subbit 安装或移动到最终位置，再打开应用。
 2. 进入 **设置 → Agent / MCP**，开启 MCP 并保存。
 3. 复制应用生成的配置，填入 Agent 客户端的 MCP 配置。配置包含当前可执行文件的真实路径和 `args: ["--mcp"]`；如果客户端使用不同格式，按其要求转换。Windows 使用 `subbit.exe` 路径。
-4. 在 Agent 客户端重新连接，先让 Agent 读取预设目录和已有订阅，再执行导入。
+4. 在 Agent 客户端重新连接，客户端会按配置自动启动 MCP 服务。随后直接用自然语言让 Agent 查询；导入前，先让 Agent 读取预设目录和已有订阅。
 
 | 工具 | Agent 可以做什么 |
 | --- | --- |

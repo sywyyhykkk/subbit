@@ -3,9 +3,9 @@
   "name": "Proton Drive",
   "category": "storage",
   "aliases": [],
-  "icon": "/catalog/icons/proton-drive.svg",
-  "iconSource": "https://simpleicons.org/",
-  "iconLicense": "CC0-1.0",
+  "icon": "/catalog/icons/proton-drive.png",
+  "iconSource": "https://drive.proton.me/assets/favicon.ico",
+  "iconLicense": "Brand asset; respective owner retains rights",
   "source": "https://proton.me/drive/pricing",
   "reviewedAt": "2026-10-17",
   "regions": [

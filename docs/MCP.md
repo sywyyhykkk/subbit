@@ -27,6 +27,8 @@ Read the catalog/schema first. Generate stable record IDs, preserve original cur
 
 Catalog `prices` are optional reference prices, not saved bills. Each quote has `amountUsd` and, for recurring purchases, a `cycleUnit` and optional `cycleCount` (default 1). Yearly quotes contain the full annual charge. Check `priceSource`, `priceReviewedAt` and `priceBasis` before using a quote; per-seat amounts cover one seat. Only use a reference price when the user chooses it. MCP imports still require complete records and do not automatically apply catalog prices or currency conversion.
 
+`get_catalog` shares the desktop's cached directory, including embedded icon data URLs in `catalog.icons` keyed by the service's `icon` path. It checks for a remote update at most once per 15 minutes, with a 15-second request timeout. On failure it returns the last complete cache, or the built-in catalog if no usable cache exists. Catalog refresh does not modify the asset database or revision and needs no app release for compatible directory changes.
+
 All tools check the enabled setting on every call. Desktop and MCP use the same file lock, validation, atomic replacement and backup. Foreground windows refresh within 15 seconds or when focused. No polling occurs when the interface is closed.
 
 `get_summary` returns null totals and `missingRates` when conversion is unavailable. It does not fetch the network or assume missing rates are 1:1. Update rates in the app or configure fixed rates.

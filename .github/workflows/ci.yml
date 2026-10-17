@@ -28,6 +28,8 @@ jobs:
       - run: npm run catalog:check
       - run: npm run test:pricing
       - run: npm run test:dates
+      - run: npm run test:levels
+      - run: npm run test:reload
       - run: npm run build
       - run: cargo test --locked --manifest-path src-tauri/Cargo.toml
       - run: cargo build --locked --manifest-path src-tauri/Cargo.toml

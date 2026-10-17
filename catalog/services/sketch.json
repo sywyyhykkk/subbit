@@ -3,9 +3,9 @@
   "name": "Sketch",
   "category": "design",
   "aliases": [],
-  "icon": "/catalog/icons/sketch.svg",
-  "iconSource": "https://simpleicons.org/",
-  "iconLicense": "CC0-1.0",
+  "icon": "/catalog/icons/sketch.png",
+  "iconSource": "https://www.sketch.com/images/metadata/icon-180.png",
+  "iconLicense": "Brand asset; respective owner retains rights",
   "source": "https://www.sketch.com/pricing/",
   "reviewedAt": "2026-10-16",
   "regions": [

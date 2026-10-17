@@ -3,6 +3,8 @@
   import Icon from "./Icon.svelte";
   import DatePicker from "./DatePicker.svelte";
   import { nextCycle } from "./dates";
+  import { createReloadQueue } from "./reload";
+  import { localizeLevelName } from "./levels";
   import { getVersion } from "@tauri-apps/api/app";
   import { openUrl } from "@tauri-apps/plugin-opener";
   import { check, type Update } from "@tauri-apps/plugin-updater";
@@ -16,9 +18,9 @@
   import { open, save, confirm } from "@tauri-apps/plugin-dialog";
   import { enable, disable, isEnabled } from "@tauri-apps/plugin-autostart";
   import {
-    categories,
-    services,
-    serviceIcon,
+    categories as bundledCategories,
+    services as bundledServices,
+    serviceIcon as bundledServiceIcon,
     currencies,
     currencyNames,
     paymentMethods,
@@ -31,10 +33,20 @@
     Snapshot,
     Service,
     Database,
+    CatalogState,
   } from "./types";
 
   const panel = new URLSearchParams(location.search).has("panel");
   let snap: Snapshot | null = $state(null);
+  let directory: CatalogState = $state({ catalog: { schemaVersion: 1, categories: bundledCategories, services: bundledServices, icons: {} }, updatedAt: null });
+  let pendingDirectory: CatalogState | null = $state(null);
+  let catalogBusy = $state(false), catalogError = $state(false);
+  const categories = $derived(directory.catalog.categories);
+  const services = $derived(directory.catalog.services);
+  const serviceIcon = (id: string | null) => {
+    const service = services.find((s) => s.id === id);
+    return (service && directory.catalog.icons[service.icon]) || bundledServiceIcon(id);
+  };
   let loading = $state(true),
     busy = $state(false),
     error = $state(""),
@@ -70,6 +82,7 @@
   const activeTheme = $derived.by(() => modal === "settings" ? prefs.theme : snap?.database.settings.theme ?? "system");
   const dark = $derived(activeTheme === "dark" || (activeTheme === "system" && systemDark));
   const tr = (zh: string, english: string) => (en ? english : zh);
+  const spendingLevelName = $derived.by(() => snap?.level ? localizeLevelName(snap.level, en) : tr("尚未达到等级", "No level yet"));
   const labels = $derived({
     addAsset: tr("新增资产", "Add asset"),
     personalCost: tr("实际花销", "Personal cost"),
@@ -80,6 +93,8 @@
     ratesUpdated: tr("汇率已更新", "Exchange rates updated"),
   });
   const entries = $derived.by(() => snap?.database.subscriptions ?? []);
+  const assetCategories = $derived([...categories, ...Array.from(new Set(entries.map((s) => s.category)))
+    .filter((id) => !categories.some((c) => c.id === id)).map((id) => ({ id, zh: id, en: id, icon: "" }))]);
   const filtered = $derived.by(() => {
     const rows = new Map(snap?.summary.rows.map((r) => [r.id, r.actual]));
     return entries.filter(
@@ -115,10 +130,11 @@
     ),
   );
   const customServices = $derived(
-    entries.filter(
-      (s, i, all) =>
-        !s.serviceId && all.findIndex((x) => x.name === s.name) === i,
-    ),
+    entries.filter((s) =>
+      !s.serviceId &&
+      (pickerCategory === "all" || s.category === pickerCategory) &&
+      s.name.toLowerCase().includes(pickerSearch.toLowerCase()),
+    ).filter((s, i, all) => all.findIndex((x) => x.name === s.name) === i),
   );
   const unitLabel = (unit: string) =>
     ({
@@ -192,7 +208,32 @@
       );
     return invoke<T>(command, args);
   }
-  async function reload(initial = false) {
+  function applyDirectory(next: CatalogState) {
+    if (modal === "editor" || modal === "picker") pendingDirectory = next;
+    else directory = next;
+  }
+  async function loadDirectory() {
+    if (isTauri()) applyDirectory(await call<CatalogState>("load_catalog"));
+  }
+  async function refreshDirectory(force = false) {
+    if (!isTauri() || catalogBusy) return;
+    catalogBusy = true;
+    catalogError = false;
+    try {
+      applyDirectory(await call<CatalogState>("refresh_catalog", { force }));
+      if (force) notice = tr("目录已更新", "Catalog updated");
+    } catch {
+      if (force) catalogError = true;
+    } finally { catalogBusy = false; }
+  }
+  $effect(() => {
+    if (pendingDirectory && modal !== "editor" && modal !== "picker") {
+      directory = pendingDirectory;
+      pendingDirectory = null;
+    }
+  });
+  const reload = createReloadQueue(loadSnapshot);
+  async function loadSnapshot(initial: boolean) {
     try {
       if (!isTauri()) {
         snap = {
@@ -202,8 +243,8 @@
             subscriptions: [],
             settings: structuredClone(defaultSettings),
             rates: {},
-            imports: {},
           },
+          key: null,
           path: "Documents/Subbit/subscriptions.json",
           executable: "subbit",
           level: null,
@@ -220,10 +261,12 @@
         };
         return;
       }
-      const next = await call<Snapshot>(
+      const requestedCurrency = currency, requestedPeriod = period;
+      const next = await call<Snapshot | null>(
         "snapshot",
-        initial ? {} : { currency, period },
+        initial ? {} : { currency: requestedCurrency, period: requestedPeriod, known: snap?.key },
       );
+      if (!next || (!initial && (currency !== requestedCurrency || period !== requestedPeriod))) return;
       snap = next;
       if (initial) {
         currency = next.database.settings.currency;
@@ -324,17 +367,32 @@
   function applyPlan(plan: Service["plans"][number] | undefined) {
     autoPrice = !!plan;
     record.plan = plan?.name ?? "";
-    record.amount = "";
     if (plan) {
       record.kind = plan.kind;
       record.cycleUnit = plan.prices?.[0]?.cycleUnit ?? plan.cycleUnit ?? "month";
       record.cycleCount = plan.prices?.[0]?.cycleCount ?? 1;
       setKind();
     }
+    const nextQuote = presetQuote(plan, record, snap?.database);
+    record.amount = nextQuote.status === "ready" ? nextQuote.amount : "";
   }
   async function submit() {
     await action(async () => {
       const payload = structuredClone($state.snapshot(record));
+      if (!payload.icon && payload.serviceId && !entries.some((s) => s.id === payload.id)) {
+        const url = serviceIcon(payload.serviceId);
+        if (url) {
+          const image = new Image();
+          image.src = url;
+          await image.decode();
+          const canvas = document.createElement("canvas");
+          canvas.width = canvas.height = 96;
+          const size = Math.max(image.naturalWidth, image.naturalHeight);
+          canvas.getContext("2d")!.drawImage(image, (96 - image.naturalWidth / size * 96) / 2,
+            (96 - image.naturalHeight / size * 96) / 2, image.naturalWidth / size * 96, image.naturalHeight / size * 96);
+          payload.icon = canvas.toDataURL("image/png");
+        }
+      }
       payload.name = payload.name.trim();
       payload.expiresAt = payload.expiresAt || null;
       // Keep the original start-date anchor for month ends and leap years.
@@ -556,6 +614,9 @@
     if (isTauri()) void call("apply_appearance", { theme: activeTheme, dark }).catch((e) => error = String(e));
   });
   $effect(() => {
+    if (modal !== "settings") preview = null;
+  });
+  $effect(() => {
     if (modal && inputDialog && !inputDialog.open) inputDialog.showModal();
     if (!modal && inputDialog?.open) inputDialog.close();
   });
@@ -567,6 +628,7 @@
     appearance.addEventListener("change", changedAppearance);
     if (isTauri()) void getVersion().then((v) => version = v);
     void (async () => {
+      await loadDirectory().catch(() => {});
       await reload(true);
       if (new URLSearchParams(location.search).has("settings")) await settings();
       if (new URLSearchParams(location.search).has("about")) { await settings(); settingsTab = "about"; }
@@ -577,28 +639,32 @@
             if (name === "open-about") void settings().then(() => settingsTab = "about");
             else if (name === "open-settings") void settings();
             else if (name === "open-add") void picker();
-            else if (!modal) void reload();
+            else if (!modal && !busy) void reload();
           });
           if (disposed) unlisten();
           else cleanup.push(unlisten);
         }
         if (!modal) void rates();
+        void refreshDirectory();
       }
     })();
     const focus = () => {
-      if (!modal) {
+      if (!modal && !busy) {
         void reload();
+        void refreshDirectory();
       }
     };
     window.addEventListener("focus", focus);
     const interval = setInterval(() => {
       if (document.hasFocus() && !modal && !busy) void reload();
     }, 15000);
+    const catalogInterval = setInterval(() => { if (document.hasFocus()) void refreshDirectory(); }, 15 * 60 * 1000);
     return () => {
       disposed = true;
       cleanup.forEach((f) => f());
       appearance.removeEventListener("change", changedAppearance);
       clearInterval(interval);
+      clearInterval(catalogInterval);
       window.removeEventListener("focus", focus);
     };
   });
@@ -607,23 +673,22 @@
 <div class:panel class="shell">
   <main>
     <header class="page-header">
-      <div class="page-title"><h1>Subbit</h1><span>{tr("数字资产", "Digital assets")}</span></div>
+      <div class="page-title"><h1>Subbit</h1>{#if snap?.database.settings.showLevel}<span class="level" title={spendingLevelName}>{spendingLevelName}</span>{/if}</div>
       <div class="header-actions">
         {#if !panel}<button class="icon-button" aria-label={tr("设置", "Settings")} title={tr("设置", "Settings")} onclick={settings}><Icon name="settings"/></button>{/if}
         <button class="primary" onclick={picker}><Icon name="plus"/>{labels.addAsset}</button>
       </div>
     </header>
     <section class="overview" aria-label={tr("成本总览", "Cost overview")}>
-      <div class="overview-heading"><span>{tr("全部资产的均摊成本", "Average cost of all assets")}</span>
+      <div class="overview-heading">
         <div class="controls"><select aria-label={tr("显示币种", "Display currency")} bind:value={currency} onchange={() => reload()}>{#each currencies.slice(0, 26) as c}<option>{c}</option>{/each}</select>
           <div class="segmented">{#each ["hour", "month", "year"] as unit}<button class:active={period === unit} aria-pressed={period === unit} onclick={() => {period = unit; void reload();}}>{tr("每", "/")}{unitLabel(unit)}</button>{/each}</div>
         </div>
       </div>
       <div class="summary-grid">
-        <div class="personal"><div class="card-label">{labels.personalCost}</div><div class="amount">{money(snap?.summary.actual)}<small>/ {unitLabel(period)}</small></div><div class="card-foot">{tr("报销后个人承担", "After reimbursement")}</div></div>
+        <div class="personal"><div class="card-label">{labels.personalCost}</div><div class="amount">{money(snap?.summary.actual)}<small>/ {unitLabel(period)}</small></div></div>
         <div class="secondary-costs"><div class="bill"><div class="card-label">{labels.billedCost}</div><div class="secondary-amount">{money(snap?.summary.bill)}</div></div><div class="reimbursed"><div class="card-label">{tr("报销抵扣", "Reimbursed")}</div><div class="secondary-amount">{money(snap?.summary.reimbursed)}</div></div></div>
       </div>
-      {#if snap?.database.settings.showLevel}<div class="spending-level"><span class="level">{snap.level ?? tr("尚未达到等级", "No level yet")}</span><span>{tr("等级依据：", "Based on: ")}{snap.database.settings.levelBasis === "bill" ? labels.billedCost : labels.personalCost} · {tr("人民币月均", "monthly CNY")}</span></div>{/if}
     </section>
     {#if snap?.summary.missingRates.length}<div class="banner warning">{tr("部分币种缺少汇率，总额暂不可用。", "Some exchange rates are missing.")}<button onclick={settings}>{tr("设置", "Settings")}</button></div>{/if}
     {#if !isTauri()}<div class="banner">{tr("界面预览 · 本地数据功能请在桌面应用中使用", "Interface preview · Local data features require the desktop app")}</div>{/if}
@@ -637,7 +702,7 @@
         <div class="list-filters">
           <select class="category-filter" aria-label={tr("筛选分类", "Filter category")} bind:value={category}>
             <option value="all">{tr("全部分类", "All categories")}</option>
-            {#each categories as c}<option value={c.id}>{en ? c.en : c.zh}</option>{/each}
+            {#each assetCategories as c}<option value={c.id}>{en ? c.en : c.zh}</option>{/each}
           </select>
           <label class="search-field"><Icon name="search" size={16}/><input class="search" aria-label={tr("搜索资产", "Search assets")} placeholder={tr("搜索资产", "Search assets")} bind:value={search}/></label>
         </div>
@@ -658,14 +723,6 @@
               ? tr("没有匹配的资产", "No matching assets")
               : tr("还没有数字资产", "No assets yet")}
           </h2>
-          <p>
-            {entries.length
-              ? tr("试试其他分类或关键词。", "Try another category or search.")
-              : tr(
-                  "从第一份订阅开始，看看每一笔花销去了哪里。",
-                  "Start with a subscription and see where it all goes.",
-                )}
-          </p>
           {#if entries.length}<button onclick={() => { category = "all"; filter = "all"; search = ""; }}>{tr("清除筛选", "Clear filters")}</button>
           {:else}<button class="primary" onclick={picker}><Icon name="plus"/>{labels.addAsset}</button>{/if}
         </div>
@@ -708,8 +765,8 @@
                           "已到期",
                           "Expired",
                         )}{:else if item.kind === "lifetime"}{tr(
-                      `已拥有 ${cost.elapsedDays} 天 · 成本逐日降低`,
-                      `Owned ${cost.elapsedDays} days · cost decreases daily`,
+                      `已拥有 ${cost.elapsedDays} 天`,
+                      `Owned ${cost.elapsedDays} days`,
                     )}{:else}{cost?.dueDate}
                     {item.autoRenew
                       ? tr("续期", "renews")
@@ -721,16 +778,12 @@
                 ></span
               >
               <span class="asset-cost"
-                ><strong>{money(cost?.actual)}</strong><span
-                  >{item.reimbursement !== "none"
-                    ? tr("报销后个人承担", "After reimbursement")
-                    : tr("均摊成本", "Average cost")}</span
-                ></span
+                ><strong>{money(cost?.actual)}</strong></span
               ><span class="chevron"><Icon name="chevron" size={16}/></span>
             </button>{/each}
         </div>{/if}
     </section>
-    <footer><span>{filtered.length} / {entries.length} {tr("项资产", "assets")}<span class="footer-separator">·</span>{tr("已保存到本地", "Saved locally")}</span>{#if panel}<button onclick={() => call("open_main")}>{labels.openApp}<Icon name="arrow" size={16}/></button>{:else}<span>{tr("当前成本折算，非扣款流水", "Amortized cost, not transactions")}</span>{/if}</footer>
+    <footer><span>{filtered.length} / {entries.length} {tr("项资产", "assets")}</span>{#if panel}<button onclick={() => call("open_main")}>{labels.openApp}<Icon name="arrow" size={16}/></button>{/if}</footer>
   </main>
 </div>
 
@@ -861,7 +914,7 @@
         <div class="form-grid">
           <label
             >{tr("分类", "Category")}<select bind:value={record.category}
-              >{#each categories as c}<option value={c.id}
+              >{#if !categories.some((c) => c.id === record.category)}<option value={record.category}>{record.category}</option>{/if}{#each categories as c}<option value={c.id}
                   >{en ? c.en : c.zh}</option
                 >{/each}</select
             ></label
@@ -942,7 +995,6 @@
             {#if quote.status === "missing-rate"}
               <span>{tr("缺少有效汇率，请在更多选项填写固定汇率，或手动输入金额。", "Exchange rate unavailable. Set a fixed rate under More options or enter the amount manually.")}</span>
             {:else}
-              <span>{tr("按美元标价换算，税费及地区定价以实际账单为准，可直接修改。", "Converted from USD list price. Regional prices and taxes may differ; edit to match your bill.")}</span>
               {#if !autoPrice}<button type="button" onclick={() => (autoPrice = true)}>{tr("使用参考价", "Use reference price")}</button>{/if}
             {/if}
           {/if}
@@ -1173,7 +1225,8 @@
                 bind:value={level.above}
               /><input
                 aria-label={tr("等级名称", "Level name")}
-                bind:value={level.name}
+                value={localizeLevelName(level.name, en)}
+                oninput={(event) => level.name = event.currentTarget.value}
               /><button aria-label={tr("删除等级", "Delete level")} onclick={() => prefs.levels.splice(i, 1)}><Icon name="close" size={16}/></button>
             </div>{/each}<button
             onclick={() => prefs.levels.push({ above: "100", name: "" })}
@@ -1263,10 +1316,7 @@
                   >{/if}
               </div>{/if}{/each}
         </div>
-      {:else if settingsTab === "data"}<h3>
-          {tr("你的数据，随你带走", "Your data goes with you")}
-        </h3>
-        <p class="hint">
+      {:else if settingsTab === "data"}<p class="hint">
           {tr(
             "所有资产、设置、自定义图标与汇率都保存在一个 JSON 文件中。每次修改保留上一份 .bak 备份。",
             "Assets, settings, custom icons and exchange rates live in one JSON file. Every write keeps the previous .bak backup.",
@@ -1311,6 +1361,10 @@
               >{tr("取消", "Cancel")}</button
             >
           </div>{/if}
+        <h3>{tr("服务目录", "Service catalog")}</h3>
+        <p class="hint">{services.length} {tr("项服务", "services")} · {categories.length} {tr("个分类", "categories")} · {directory.updatedAt ? new Date(directory.updatedAt * 1000).toLocaleDateString(en ? "en-US" : "zh-CN") : tr("内置目录", "Built-in catalog")}</p>
+        <button disabled={catalogBusy} onclick={() => refreshDirectory(true)}><Icon name="refresh" size={16}/>{catalogBusy ? tr("正在更新…", "Updating…") : tr("更新目录", "Update catalog")}</button>
+        {#if catalogError}<p class="hint" role="status">{tr("更新失败，继续使用本地目录", "Update failed. Using the local catalog.")}</p>{/if}
       {:else if settingsTab === "about"}<div class="about-app">
         <img class="app-icon" src={dark ? appDark : appLight} alt="Subbit"/>
         <h2>Subbit</h2><p>{tr("版本", "Version")} {version}</p>

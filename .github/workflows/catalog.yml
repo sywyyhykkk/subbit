@@ -1,0 +1,52 @@
+name: Publish service catalog
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'catalog/**'
+      - 'scripts/build-catalog.mjs'
+      - 'scripts/check-catalog.mjs'
+      - '.github/workflows/catalog.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publish-catalog
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm run catalog:check
+      - run: npm run catalog:bundle
+      - name: Publish catalog independently of app releases
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          publish="$RUNNER_TEMP/subbit-catalog"
+          if git ls-remote --exit-code --heads origin catalog > /dev/null; then
+            git fetch origin catalog
+            git worktree add --detach "$publish" FETCH_HEAD
+          else
+            git worktree add --detach "$publish" HEAD
+            git -C "$publish" checkout --orphan catalog
+            git -C "$publish" rm -rf .
+          fi
+          cp artifacts/catalog.json "$publish/catalog.json"
+          git -C "$publish" add catalog.json
+          if ! git -C "$publish" diff --cached --quiet; then
+            git -C "$publish" commit -m "Update service catalog"
+            git -C "$publish" push origin HEAD:catalog
+          fi

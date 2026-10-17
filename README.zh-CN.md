@@ -6,17 +6,17 @@
 
 ## 下载与安装
 
-下载 [Subbit 0.0.2 正式版](https://github.com/sywyyhykkk/subbit/releases/tag/v0.0.2)：
+下载 [Subbit 0.0.3 正式版](https://github.com/sywyyhykkk/subbit/releases/tag/v0.0.3)：
 
-- [macOS Apple Silicon DMG](https://github.com/sywyyhykkk/subbit/releases/download/v0.0.2/Subbit_0.0.2_macos-arm64.dmg)：macOS 12+，Apple M 系列芯片。
-- [macOS Intel DMG](https://github.com/sywyyhykkk/subbit/releases/download/v0.0.2/Subbit_0.0.2_macos-x86_64.dmg)：macOS 12+，Intel 处理器。
-- [Windows x64 安装 EXE](https://github.com/sywyyhykkk/subbit/releases/download/v0.0.2/Subbit_0.0.2_windows-x64-setup.exe)：支持 Windows 10/11、Intel/AMD 64 位。运行安装程序，再从开始菜单启动。
+- [macOS Apple Silicon DMG](https://github.com/sywyyhykkk/subbit/releases/download/v0.0.3/Subbit_0.0.3_macos-arm64.dmg)：macOS 12+，Apple M 系列芯片。
+- [macOS Intel DMG](https://github.com/sywyyhykkk/subbit/releases/download/v0.0.3/Subbit_0.0.3_macos-x86_64.dmg)：macOS 12+，Intel 处理器。
+- [Windows x64 安装 EXE](https://github.com/sywyyhykkk/subbit/releases/download/v0.0.3/Subbit_0.0.3_windows-x64-setup.exe)：支持 Windows 10/11、Intel/AMD 64 位。运行安装程序，再从开始菜单启动。
 
 Mac 可在苹果菜单 → 关于本机中查看芯片类型，选择对应的 DMG，打开后将 Subbit 拖入 Applications。
 
-无需开发环境。Windows 缺少 WebView2 时会联网安装；请下载安装包，而不是 GitHub 自动生成的 Source code 源码压缩包。此版本尚无发布者签名及 Apple 公证，首次启动可能出现 Gatekeeper 或 SmartScreen 提示。安装条件和验证范围见 [发布说明](docs/releases/0.0.2.md)。
+无需开发环境。Windows 缺少 WebView2 时会联网安装；请下载安装包，而不是 GitHub 自动生成的 Source code 源码压缩包。此版本尚无发布者签名及 Apple 公证，首次启动可能出现 Gatekeeper 或 SmartScreen 提示。安装条件和验证范围见 [发布说明](docs/releases/0.0.3.md)。
 
-从 0.0.1 升级需手动安装一次 0.0.2；此后可在 **设置 → 关于 → 检查更新** 中下载、安装并重启。
+0.0.2 可在 **设置 → 关于 → 检查更新** 中升级至 0.0.3；从 0.0.1 升级需手动安装一次。
 
 ## 功能
 
@@ -67,12 +67,12 @@ npm run tauri build -- --config '{"bundle":{"createUpdaterArtifacts":false}}'
 
 ## 给 Agent 使用：MCP 接入
 
-Subbit 内置本地 MCP 服务，让支持 MCP 的 Agent 读取订阅、汇总成本，或根据你提供的账单批量导入记录。服务通过 `subbit --mcp` 启动，使用 stdio 通信，与桌面应用共享本地数据，不打开窗口或网络端口。
+Subbit 内置本地 MCP 服务，让支持 MCP 的 Agent 读取订阅、汇总成本，或根据你提供的账单批量导入记录。配置完成后，Agent 客户端会自动执行 Subbit 可执行文件并传入 `--mcp` 参数来启动服务，**无需手动在终端运行命令**。服务使用 stdio 通信，与桌面应用共享本地数据，不打开窗口或网络端口。
 
 1. 将 Subbit 安装或移动到最终位置，再打开应用。
 2. 进入 **设置 → Agent / MCP**，开启 MCP 并保存。
 3. 复制应用生成的配置，填入 Agent 客户端的 MCP 配置。配置包含当前可执行文件的真实路径和 `args: ["--mcp"]`；如果客户端使用不同格式，按其要求转换。Windows 使用 `subbit.exe` 路径。
-4. 在 Agent 客户端重新连接，先让 Agent 读取预设目录和已有订阅，再执行导入。
+4. 在 Agent 客户端重新连接，客户端会按配置自动启动 MCP 服务。随后直接用自然语言让 Agent 查询；导入前，先让 Agent 读取预设目录和已有订阅。
 
 | 工具 | Agent 可以做什么 |
 | --- | --- |
@@ -98,6 +98,8 @@ Subbit 内置本地 MCP 服务，让支持 MCP 的 Agent 读取订阅、汇总�
 
 完整字段规则见 [预设贡献指南](catalog/CONTRIBUTING.md)。目录更新不会覆盖已有记录中的名称、套餐和金额。如果只供自己使用，直接在应用中选择“自定义服务”即可。
 
+目录 PR 合并到 `main` 后，GitHub Actions 会独立发布分类、服务、套餐和图标，无需发布应用新版。支持此功能的应用和 MCP 会获取并缓存目录；离线或更新失败时继续使用本地缓存，没有缓存时使用内置目录。也可在「设置 → 数据 → 更新目录」手动刷新。目录缓存与资产文件分开保存，不修改已有资产、设置和汇率。旧版应用需先升级一次以获得此功能。
+
 ## 安装包
 
 Tag 发布流程通过 GitHub Actions 的 `TAURI_SIGNING_PRIVATE_KEY` Secret 签署更新包并发布 `latest.json`。签名私钥应在仓库外独立备份。
@@ -105,3 +107,5 @@ Tag 发布流程通过 GitHub Actions 的 `TAURI_SIGNING_PRIVATE_KEY` Secret 签
 安装包位于 `src-tauri/target/release/bundle/`。macOS 开发包未经过 Apple 开发者签名和公证。Windows 使用系统 WebView2，缺少时由安装程序下载，不捆绑离线浏览器。应用图标使用 Subbit 专属「账单兔」。
 
 [完整开发说明与存储约定](README.md) · [MCP 接入](docs/MCP.md) · [增加服务 / 分类](catalog/CONTRIBUTING.md) · [MIT License](LICENSE)
+
+开发与发布：[Agent 开发约定](AGENTS.md) · [开发经验](docs/ENGINEERING_LESSONS.md) · [发版流程与校验](docs/RELEASING.md)。

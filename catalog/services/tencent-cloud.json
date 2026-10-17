@@ -8,9 +8,9 @@
     "Lighthouse",
     "轻量应用服务器"
   ],
-  "icon": "/catalog/icons/tencent-cloud.svg",
-  "iconSource": "Local letter placeholder",
-  "iconLicense": "MIT",
+  "icon": "/catalog/icons/tencent-cloud.png",
+  "iconSource": "https://www.tencentcloud.com/favicon.ico?t=201902181234",
+  "iconLicense": "Brand asset; respective owner retains rights",
   "source": "https://www.tencentcloud.com/products/cvm",
   "reviewedAt": "2026-10-17",
   "regions": [

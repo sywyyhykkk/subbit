@@ -50,7 +50,13 @@ export interface CostRow {
   elapsedDays: number;
 }
 export interface Snapshot {
-  database: Database;
+  database: Omit<Database, "imports">;
+  key: {
+    file: { path: string; length: number | null; modifiedAt: string | null };
+    currency: string;
+    period: string;
+    day: string;
+  } | null;
   path: string;
   executable: string;
   level: string | null;
@@ -64,6 +70,22 @@ export interface Snapshot {
     rows: CostRow[];
     activeCount: number;
   };
+}
+export interface Category {
+  id: string;
+  zh: string;
+  en: string;
+  icon: string;
+}
+export interface Catalog {
+  schemaVersion: number;
+  categories: Category[];
+  services: Service[];
+  icons: Record<string, string>;
+}
+export interface CatalogState {
+  catalog: Catalog;
+  updatedAt: number | null;
 }
 export interface Service {
   id: string;

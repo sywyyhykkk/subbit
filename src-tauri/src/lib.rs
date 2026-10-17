@@ -1,9 +1,11 @@
 pub mod mcp;
+pub mod catalog;
 pub mod model;
 mod rates;
 pub mod store;
+pub mod view;
 use model::*;
-use serde_json::{json, Value};
+use serde_json::Value;
 use std::path::PathBuf;
 use store::Store;
 use tauri::{
@@ -13,21 +15,24 @@ use tauri::{
 };
 
 pub fn catalog() -> Value {
-    serde_json::from_str(include_str!(concat!(env!("OUT_DIR"), "/catalog.json")))
-        .expect("validated embedded catalog")
+    serde_json::to_value(catalog::CatalogCache::system().map(|c| c.load().catalog)
+        .unwrap_or_else(|_| catalog::bundled())).expect("catalog serialization")
+}
+pub(crate) fn init_tls() {
+    let _ = rustls::crypto::ring::default_provider().install_default();
 }
 #[tauri::command]
-fn snapshot(currency: Option<String>, period: Option<String>) -> Result<Value> {
-    let (db, path) = Store::system()?.read()?;
-    let summary = db.summary(
-        currency.as_deref().unwrap_or(&db.settings.currency),
-        period.as_deref().unwrap_or(&db.settings.period),
-        today(),
-    )?;
-    let level = db.spending_level(today())?;
-    Ok(
-        json!({"database":db,"path":path,"summary":summary,"level":level,"executable":std::env::current_exe().map_err(|e|e.to_string())?}),
-    )
+fn load_catalog() -> Result<catalog::CatalogState> {
+    Ok(catalog::CatalogCache::system()?.load())
+}
+#[tauri::command]
+async fn refresh_catalog(force: bool) -> Result<catalog::CatalogState> {
+    tauri::async_runtime::spawn_blocking(move || catalog::CatalogCache::system()?.refresh(force))
+        .await.map_err(|e| e.to_string())?
+}
+#[tauri::command]
+fn snapshot(currency: Option<String>, period: Option<String>, known: Option<view::SnapshotKey>) -> Result<Option<view::Snapshot>> {
+    view::load(&Store::system()?, currency.as_deref(), period.as_deref(), known.as_ref(), today())
 }
 #[tauri::command]
 fn save_subscription(record: Subscription, revision: u64, app: tauri::AppHandle) -> Result<()> {
@@ -153,7 +158,7 @@ fn show_main(app: &tauri::AppHandle, action: &str) -> tauri::Result<()> {
         ),
     )
     .title("Subbit")
-    .inner_size(880., 720.)
+    .inner_size(880., 780.)
     .min_inner_size(620., 520.)
     .center()
     .build()?;
@@ -172,7 +177,7 @@ fn show_panel(app: &tauri::AppHandle, position: tauri::PhysicalPosition<f64>) ->
     let window =
         WebviewWindowBuilder::new(app, "panel", WebviewUrl::App("index.html?panel=1".into()))
             .title("Subbit")
-            .inner_size(400., 590.)
+            .inner_size(400., 650.)
             .decorations(false)
             .resizable(false)
             .always_on_top(true)
@@ -192,7 +197,7 @@ fn show_panel(app: &tauri::AppHandle, position: tauri::PhysicalPosition<f64>) ->
         let p = m.position();
         let s = m.size();
         let width = 400. * scale;
-        let height = 590. * scale;
+        let height = 650. * scale;
         let x = (position.x - width / 2.)
             .max(p.x as f64 + 8.)
             .min(p.x as f64 + s.width as f64 - width - 8.);
@@ -217,6 +222,7 @@ fn show_panel(app: &tauri::AppHandle, position: tauri::PhysicalPosition<f64>) ->
     Ok(())
 }
 pub fn run() {
+    init_tls();
     tauri::Builder::default()
         .plugin(tauri_plugin_single_instance::init(|app, _, _| {
             let _ = show_main(app, "");
@@ -231,6 +237,8 @@ pub fn run() {
                 .build(),
         )
         .invoke_handler(tauri::generate_handler![
+            load_catalog,
+            refresh_catalog,
             snapshot,
             save_subscription,
             delete_subscription,

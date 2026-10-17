@@ -1,5 +1,6 @@
 use crate::model::*;
 use fs2::FileExt;
+use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use std::{
     fs::{self, File, OpenOptions},
@@ -10,12 +11,37 @@ use std::{
 pub struct Store {
     root: PathBuf,
 }
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FileStamp {
+    pub path: PathBuf,
+    pub length: Option<u64>,
+    pub modified_at: Option<String>,
+}
+impl FileStamp {
+    fn read(path: PathBuf) -> Result<Self> {
+        let metadata = match fs::metadata(&path) {
+            Ok(metadata) => Some(metadata),
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => None,
+            Err(error) => return Err(error.to_string()),
+        };
+        let modified_at = metadata.as_ref().map(|metadata| {
+            metadata.modified().map_err(|e| e.to_string())?
+                .duration_since(std::time::UNIX_EPOCH).map_err(|e| e.to_string())
+                .map(|duration| duration.as_nanos().to_string())
+        }).transpose()?;
+        Ok(Self { length: metadata.map(|metadata| metadata.len()), path, modified_at })
+    }
+}
+pub(crate) fn config_root() -> Result<PathBuf> {
+    std::env::var_os("SUBBIT_CONFIG_DIR")
+        .map(PathBuf::from)
+        .or_else(|| dirs::config_dir().map(|p| p.join("com.sywyyhykkk.subbit")))
+        .ok_or_else(|| "Cannot locate config directory".into())
+}
 impl Store {
     pub fn system() -> Result<Self> {
-        let root = std::env::var_os("SUBBIT_CONFIG_DIR")
-            .map(PathBuf::from)
-            .or_else(|| dirs::config_dir().map(|p| p.join("com.sywyyhykkk.subbit")))
-            .ok_or("Cannot locate config directory")?;
+        let root = config_root()?;
         fs::create_dir_all(&root).map_err(|e| e.to_string())?;
         Ok(Self { root })
     }
@@ -71,6 +97,15 @@ impl Store {
         let path = self.location()?;
         let db = Self::read_at(&path)?;
         Ok((db, path))
+    }
+    pub fn read_if_changed(&self, known: Option<&FileStamp>) -> Result<Option<(Database, FileStamp)>> {
+        let _lock = self.lock()?;
+        let stamp = FileStamp::read(self.location()?)?;
+        if known == Some(&stamp) {
+            return Ok(None);
+        }
+        let db = Self::read_at(&stamp.path)?;
+        Ok(Some((db, stamp)))
     }
     pub fn update<T>(&self, f: impl FnOnce(&mut Database) -> Result<T>) -> Result<T> {
         let _lock = self.lock()?;

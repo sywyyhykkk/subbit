@@ -3788,8 +3788,9 @@ checksum = "7da8b5736845d9f2fcb837ea5d9e2628564b3b043a70948a3f0b778838c5fb4f"
 
 [[package]]
 name = "subbit"
-version = "0.0.2"
+version = "0.0.3"
 dependencies = [
+ "base64 0.22.1",
  "chrono",
  "dirs 6.0.0",
  "fs2",
@@ -3798,6 +3799,7 @@ dependencies = [
  "objc2-foundation",
  "reqwest",
  "rust_decimal",
+ "rustls",
  "serde",
  "serde_json",
  "tauri",

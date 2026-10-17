@@ -8,17 +8,17 @@ Rust + Tauri 2 + Svelte 5. macOS and Windows. No account, server, or bundled bro
 
 ## Download and install
 
-Get [Subbit 0.0.2](https://github.com/sywyyhykkk/subbit/releases/tag/v0.0.2):
+Get [Subbit 0.0.3](https://github.com/sywyyhykkk/subbit/releases/tag/v0.0.3):
 
-- [macOS Apple Silicon DMG](https://github.com/sywyyhykkk/subbit/releases/download/v0.0.2/Subbit_0.0.2_macos-arm64.dmg): macOS 12+, Apple M-series chips.
-- [macOS Intel DMG](https://github.com/sywyyhykkk/subbit/releases/download/v0.0.2/Subbit_0.0.2_macos-x86_64.dmg): macOS 12+, Intel processors.
-- [Windows x64 setup EXE](https://github.com/sywyyhykkk/subbit/releases/download/v0.0.2/Subbit_0.0.2_windows-x64-setup.exe): Windows 10/11 on Intel/AMD. Run the installer, then launch from the Start menu.
+- [macOS Apple Silicon DMG](https://github.com/sywyyhykkk/subbit/releases/download/v0.0.3/Subbit_0.0.3_macos-arm64.dmg): macOS 12+, Apple M-series chips.
+- [macOS Intel DMG](https://github.com/sywyyhykkk/subbit/releases/download/v0.0.3/Subbit_0.0.3_macos-x86_64.dmg): macOS 12+, Intel processors.
+- [Windows x64 setup EXE](https://github.com/sywyyhykkk/subbit/releases/download/v0.0.3/Subbit_0.0.3_windows-x64-setup.exe): Windows 10/11 on Intel/AMD. Run the installer, then launch from the Start menu.
 
 On macOS, check Apple menu → About This Mac to identify your chip, choose the matching DMG, then drag Subbit into Applications.
 
-No development tools are required. Windows installs WebView2 over the internet if it is missing. Choose an installer rather than GitHub's “Source code” archives. This release is not publisher-signed or Apple-notarized, so Gatekeeper or SmartScreen may require confirmation at first launch. See the [release notes](docs/releases/0.0.2.md) for installation conditions and validation details.
+No development tools are required. Windows installs WebView2 over the internet if it is missing. Choose an installer rather than GitHub's “Source code” archives. This release is not publisher-signed or Apple-notarized, so Gatekeeper or SmartScreen may require confirmation at first launch. See the [release notes](docs/releases/0.0.3.md) for installation conditions and validation details.
 
-Updates after 0.0.2 can be installed from **Settings → About → Check for updates**. Install 0.0.2 manually once when upgrading from 0.0.1.
+From 0.0.2, install 0.0.3 using **Settings → About → Check for updates**. When upgrading from 0.0.1, install 0.0.3 manually once.
 
 ## What it does
 
@@ -93,12 +93,12 @@ Billing currency is distinct from payment method: a USD-priced subscription paid
 
 ## Use Subbit with an Agent (MCP)
 
-Subbit includes a local MCP server so an MCP-compatible Agent can read your subscriptions, summarize costs and import records from information you provide. It runs as `subbit --mcp` over stdio, using the same local data as the desktop app, without opening a window or network port.
+Subbit includes a local MCP server so an MCP-compatible Agent can read your subscriptions, summarize costs and import records from information you provide. Once configured, your Agent client automatically starts the server by launching the Subbit executable with the `--mcp` argument. **You do not need to run a command manually in a terminal.** The server communicates over stdio, using the same local data as the desktop app, without opening a window or network port.
 
 1. Install or move Subbit to its final location, then open it.
 2. Open **Settings → Agent / MCP**, enable MCP and save.
 3. Copy the generated configuration into your Agent client's MCP configuration. It contains the executable's actual path and `args: ["--mcp"]`; adapt the format if your client requires it. On Windows, the command points to `subbit.exe`.
-4. Reconnect the Agent client. Ask it to read the catalog and your current subscriptions before importing anything.
+4. Reconnect the Agent client; it will automatically start the MCP server using the configuration. Then make requests in natural language. Before importing anything, ask the Agent to read the catalog and your current subscriptions.
 
 | Tool | What the Agent can do |
 | --- | --- |
@@ -114,6 +114,8 @@ See [MCP configuration and import examples](docs/MCP.md) and the [subscription J
 
 ## Contribute service presets
 
+Catalog changes merged into `main` are published independently by the **Publish service catalog** workflow, without an app release. Desktop and MCP share an offline cache of categories, services, plans and icons; failed updates retain the last good cache, with the embedded catalog as the initial fallback. Refresh manually in **Settings → Data → Update catalog**. The catalog cache never rewrites saved assets, settings or exchange rates. Existing installations need one app upgrade to gain remote catalog support. See [the catalog guide](catalog/CONTRIBUTING.md) for publication and caching details.
+
 Presets are shared by the desktop picker and MCP. To add a service or fix its plans:
 
 1. Copy a similar JSON file in `catalog/services/`. Give it a stable lowercase kebab-case ID matching its filename, the official name, search aliases, category, source URL, review date and region information.
@@ -125,3 +127,5 @@ Presets are shared by the desktop picker and MCP. To add a service or fix its pl
 See the [complete catalog contribution guide](catalog/CONTRIBUTING.md). Catalog updates preserve existing saved names, plans and amounts. For personal-only entries, choose **Custom service** in the app; no repository contribution is needed.
 
 App artwork uses the Subbit rabbit, created for this project. Brand icons retain their respective licenses and trademark rights; source metadata lives beside every service entry. Code and original assets are [MIT licensed](LICENSE).
+
+Development and release: [Agent guidelines](AGENTS.md) · [Engineering lessons](docs/ENGINEERING_LESSONS.md) · [Release procedure and checks](docs/RELEASING.md).

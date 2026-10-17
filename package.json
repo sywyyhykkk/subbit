@@ -1,6 +1,6 @@
 {
   "name": "subbit",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "A lightweight, local-first subscription companion for macOS and Windows",
   "scripts": {
     "dev": "vite",
@@ -9,8 +9,11 @@
     "tauri": "tauri",
     "test": "cargo test --manifest-path src-tauri/Cargo.toml",
     "catalog:check": "node scripts/check-catalog.mjs",
+    "catalog:bundle": "node scripts/build-catalog.mjs",
     "test:pricing": "node --test scripts/pricing.test.mjs",
-    "test:dates": "node --test scripts/dates.test.mjs"
+    "test:dates": "node --test scripts/dates.test.mjs",
+    "test:levels": "node --test scripts/levels.test.mjs",
+    "test:reload": "node --test scripts/reload.test.mjs"
   },
   "keywords": [],
   "author": "mango",

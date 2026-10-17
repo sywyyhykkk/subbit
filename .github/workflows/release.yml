@@ -46,6 +46,8 @@ jobs:
       - run: npm run catalog:check
       - run: npm run test:pricing
       - run: npm run test:dates
+      - run: npm run test:levels
+      - run: npm run test:reload
       - name: Check release version
         shell: bash
         run: |

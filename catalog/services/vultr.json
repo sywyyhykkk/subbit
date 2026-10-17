@@ -6,9 +6,9 @@
     "VPS",
     "Cloud Compute"
   ],
-  "icon": "/catalog/icons/vultr.svg",
-  "iconSource": "https://github.com/simple-icons/simple-icons/blob/16.35.0/icons/vultr.svg",
-  "iconLicense": "CC0-1.0",
+  "icon": "/catalog/icons/vultr.png",
+  "iconSource": "https://www.vultr.com/favicon.ico",
+  "iconLicense": "Brand asset; respective owner retains rights",
   "source": "https://www.vultr.com/pricing/",
   "reviewedAt": "2026-10-17",
   "regions": [

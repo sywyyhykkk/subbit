@@ -7,6 +7,7 @@
   ],
   "icon": "/catalog/icons/chatgpt.svg",
   "iconSource": "https://github.com/simple-icons/simple-icons/blob/13.21.0/icons/openai.svg",
+  "iconColorSource": "https://help.openai.com/en/articles/7905742-what-does-the-official-chatgpt-ios-app-icon-look-like",
   "iconLicense": "CC0-1.0",
   "source": "https://chatgpt.com/pricing/",
   "reviewedAt": "2026-10-17",

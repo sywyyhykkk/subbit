@@ -1,0 +1,71 @@
+{
+  "id": "spine",
+  "name": "Spine",
+  "category": "design",
+  "aliases": ["Esoteric Software", "Spine 2D", "骨骼动画"],
+  "icon": "/catalog/icons/spine.png",
+  "iconSource": "https://en.esotericsoftware.com/apple-touch-icon-180x180.png",
+  "iconLicense": "Brand asset; respective owner retains rights",
+  "source": "https://en.esotericsoftware.com/spine-purchase",
+  "reviewedAt": "2026-10-18",
+  "regions": ["Official purchase page lists USD prices; availability may vary by region"],
+  "plans": [
+    {
+      "id": "essential",
+      "name": "Essential",
+      "kind": "lifetime",
+      "retired": false,
+      "prices": [{ "amountUsd": "99.00" }],
+      "priceSource": "https://en.esotericsoftware.com/spine-purchase",
+      "priceReviewedAt": "2026-10-18",
+      "priceBasis": "per-seat"
+    },
+    {
+      "id": "professional",
+      "name": "Professional",
+      "kind": "lifetime",
+      "retired": false,
+      "prices": [{ "amountUsd": "449.00" }],
+      "priceSource": "https://en.esotericsoftware.com/spine-purchase",
+      "priceReviewedAt": "2026-10-18",
+      "priceBasis": "per-seat"
+    },
+    {
+      "id": "enterprise",
+      "name": "Enterprise",
+      "kind": "recurring",
+      "cycleUnit": "year",
+      "retired": false
+    },
+    {
+      "id": "education-10-computers",
+      "name": "Education — 10 computers",
+      "kind": "recurring",
+      "cycleUnit": "year",
+      "retired": false,
+      "prices": [{ "amountUsd": "850.00", "cycleUnit": "year" }],
+      "priceSource": "https://en.esotericsoftware.com/spine-purchase",
+      "priceReviewedAt": "2026-10-18"
+    },
+    {
+      "id": "education-25-computers",
+      "name": "Education — 25 computers",
+      "kind": "recurring",
+      "cycleUnit": "year",
+      "retired": false,
+      "prices": [{ "amountUsd": "1700.00", "cycleUnit": "year" }],
+      "priceSource": "https://en.esotericsoftware.com/spine-purchase",
+      "priceReviewedAt": "2026-10-18"
+    },
+    {
+      "id": "education-50-computers",
+      "name": "Education — 50 computers",
+      "kind": "recurring",
+      "cycleUnit": "year",
+      "retired": false,
+      "prices": [{ "amountUsd": "2900.00", "cycleUnit": "year" }],
+      "priceSource": "https://en.esotericsoftware.com/spine-purchase",
+      "priceReviewedAt": "2026-10-18"
+    }
+  ]
+}

@@ -357,3 +357,8 @@ pre { font-family: ui-monospace, SFMono-Regular, monospace; font-size: 12px; lin
 .release-markdown code { font-size: 12px; background: var(--subtle); border-radius: 3px; padding: 2px 4px; }
 .release-markdown pre { overflow: auto; white-space: pre-wrap; }
 .release-markdown blockquote { border-left: 2px solid var(--line); margin-left: 0; padding-left: 14px; color: var(--muted); }
+
+.backup-list { margin-top: 20px; }
+.backup-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.backup-row small { display: block; margin-top: 4px; color: var(--muted); }
+.backup-row button { flex-shrink: 0; }

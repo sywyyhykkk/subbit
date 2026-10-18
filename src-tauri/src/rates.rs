@@ -124,7 +124,7 @@ pub fn validate_import(rates: &BTreeMap<String, Rate>) -> Result<()> {
 pub fn import(store: &Store, id: String, revision: u64, rates: BTreeMap<String, Rate>) -> Result<Value> {
     validate_import(&rates)?;
     if id.is_empty() || id.len() > 100 { return Err("A stable importId is required".into()); }
-    store.update_if_changed(|db| {
+    store.update_if_changed(true, |db| {
         if !db.settings.mcp_enabled { return Err("MCP is disabled".into()); }
         if let Some(previous) = db.rate_imports.get(&id) {
             if previous != &rates { return Err("importId was used for different rates".into()); }

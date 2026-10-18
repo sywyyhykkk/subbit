@@ -100,7 +100,9 @@
     rateCode = $state("USD"),
     rateValue = $state("");
   let preview: Database | null = $state(null);
-  let fileInfo: {data: number | null; backup: number | null} | null = $state(null);
+  let restoringBackup = $state(false);
+  let backupDate = $state("");
+  let fileInfo: {data: number | null; backup: number | null; backups: {kind: string; path: string; size: number; modifiedAt: string; count: number | null; valid: boolean}[]} | null = $state(null);
   let fileInfoError = $state(false);
   let inputDialog: HTMLDialogElement;
   const activeLanguage = $derived.by(() => modal === "settings" ? prefs.language : snap?.database.settings.language ?? "system");
@@ -612,13 +614,14 @@
         filters: [{ name: "JSON", extensions: ["json"] }],
       });
       if (path) {
+        restoringBackup = false;
         preview = await call<Database>("preview_file", { path });
       }
     });
   }
   async function replaceData() {
     await action(async () => {
-      await call("replace_data", {
+      await call(restoringBackup ? "restore_data" : "replace_data", {
         database: $state.snapshot(preview),
         revision: settingsRevision,
       });
@@ -1439,8 +1442,8 @@
         </div>
       {:else if settingsTab === "data"}<p class="hint">
           {tr(
-            "所有资产、设置、自定义图标与汇率都保存在一个 JSON 文件中。每次修改保留上一份 .bak 备份。",
-            "Assets, settings, custom icons and exchange rates live in one JSON file. Every write keeps the previous .bak backup.",
+            "所有资产、设置、自定义图标与汇率都保存在一个 JSON 文件中。最多保留 3 份备份：最近 2 份普通备份和 1 份导入前备份。",
+            "Assets, settings, icons and rates live in one JSON file. Keep up to 3 backups: 2 recent versions and 1 pre-import checkpoint.",
           )}
         </p>
         <div class="data-path">
@@ -1465,7 +1468,14 @@
             ><Icon name="download" size={16}/>{tr("导入 JSON", "Import JSON")}</button
           >
         </div>
+        {#if fileInfo?.backups.length}<div class="backup-list">
+          {#each fileInfo.backups as backup}<div class="backup-row">
+            <span><strong>{backup.kind === "import" ? tr("导入前备份", "Before import") : backup.kind === "latest" ? tr("最近备份", "Latest backup") : tr("上一份备份", "Previous backup")}</strong><small>{localTimestamp(backup.modifiedAt)} · {backup.count ?? "—"} {tr("项资产", "assets")} · {bytesLabel(backup.size)}</small></span>
+            <button disabled={busy || !backup.valid} onclick={() => action(async () => { const data = await call<Database>("preview_file", { path: backup.path }); restoringBackup = true; backupDate = localTimestamp(backup.modifiedAt); preview = data; })}>{tr("预览恢复", "Preview restore")}</button>
+          </div>{/each}
+        </div>{/if}
         {#if preview}<div class="import-preview">
+            {#if restoringBackup}<p>{tr("恢复备份", "Restore backup")} · {backupDate}</p>{/if}
             <strong
               >{tr(
                 `导入 ${preview.subscriptions.length} 项资产`,
@@ -1479,7 +1489,7 @@
               )}
             </p>
             <button class="primary" disabled={busy} onclick={replaceData}
-              >{tr("确认替换", "Replace data")}</button
+              >{restoringBackup ? tr("确认恢复", "Restore backup") : tr("确认替换", "Replace data")}</button
             ><button onclick={() => (preview = null)}
               >{tr("取消", "Cancel")}</button
             >

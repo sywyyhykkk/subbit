@@ -415,3 +415,30 @@ fn names_within_batch_require_confirmation_even_for_empty_store() {
     assert_eq!(store.read().unwrap().0.revision, db.revision);
     assert_eq!(store.import_batch("same-name".into(), records, true).unwrap()["added"], 2);
 }
+
+#[test]
+fn backups_are_bounded_and_import_checkpoint_survives_ordinary_writes_and_restore() {
+    let (_dir, store) = store();
+    store.update(|db| { db.settings.mcp_enabled = true; Ok(()) }).unwrap();
+    let (before_import, path) = store.read().unwrap();
+    store.import_batch("protected".into(), vec![sample()], false).unwrap();
+    let checkpoint = path.with_extension("json.pre-import.bak");
+    let checkpoint_bytes = std::fs::read(&checkpoint).unwrap();
+    assert_eq!(serde_json::from_slice::<Database>(&checkpoint_bytes).unwrap().revision, before_import.revision);
+    for i in 0..8 {
+        store.update(|db| { db.subscriptions[0].notes = format!("edit {i}"); Ok(()) }).unwrap();
+    }
+    assert_eq!(std::fs::read(&checkpoint).unwrap(), checkpoint_bytes);
+    assert_eq!(store.file_info().unwrap()["backups"].as_array().unwrap().len(), 3);
+    let backup_count = std::fs::read_dir(path.parent().unwrap()).unwrap()
+        .filter_map(|e|e.ok()).filter(|e|e.file_name().to_string_lossy().contains(".bak")).count();
+    assert_eq!(backup_count, 3);
+    let current = std::fs::read(&path).unwrap();
+    let revision = store.read().unwrap().0.revision;
+    store.replace_snapshot(store.preview_file(checkpoint.clone()).unwrap(), revision, false).unwrap();
+    assert!(store.read().unwrap().0.subscriptions.is_empty());
+    assert_eq!(store.read().unwrap().0.revision, revision + 1);
+    assert_eq!(std::fs::read(path.with_extension("json.bak")).unwrap(), current);
+    assert_eq!(std::fs::read(&checkpoint).unwrap(), checkpoint_bytes);
+    for (_, backup) in subbit_lib::store::backup_paths(&path) { assert!(store.export(backup).is_err()); }
+}

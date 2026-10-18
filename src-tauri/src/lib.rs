@@ -33,15 +33,7 @@ fn panel_ready(window: tauri::WebviewWindow, dark: bool) -> Result<()> {
 }
 #[tauri::command]
 fn data_file_info() -> Result<Value> {
-    let path = Store::system()?.location()?;
-    let size = |path: &std::path::Path| -> Result<Option<u64>> {
-        match std::fs::metadata(path) {
-            Ok(metadata) => Ok(Some(metadata.len())),
-            Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(None),
-            Err(e) => Err(e.to_string()),
-        }
-    };
-    Ok(serde_json::json!({"data":size(&path)?,"backup":size(&path.with_extension("json.bak"))?}))
+    Store::system()?.file_info()
 }
 #[tauri::command]
 fn reveal_data(app: tauri::AppHandle) -> Result<()> {
@@ -128,6 +120,12 @@ fn export_data(path: PathBuf) -> Result<()> {
 #[tauri::command]
 fn preview_file(path: PathBuf) -> Result<Database> {
     Store::system()?.preview_file(path)
+}
+#[tauri::command]
+fn restore_data(database: Database, revision: u64, app: tauri::AppHandle) -> Result<()> {
+    Store::system()?.replace_snapshot(database, revision, false)?;
+    let _ = app.emit("data-changed", ());
+    Ok(())
 }
 #[tauri::command]
 fn replace_data(database: Database, revision: u64, app: tauri::AppHandle) -> Result<()> {
@@ -303,6 +301,7 @@ pub fn run() {
             export_data,
             preview_file,
             replace_data,
+            restore_data,
             move_data,
             locate_data,
             open_main,

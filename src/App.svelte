@@ -900,7 +900,7 @@
                 ></span
               >
               <span class="asset-cost"
-                >{#if reimbursementStatus(item) !== "none" && cost?.bill != null && cost?.actual != null && cost.bill !== cost.actual}<del title={labels.billedCost}>{money(cost.bill)}</del>{/if}<strong>{money(cost?.actual)}</strong>{#if reimbursementStatus(item) === "full"}<small>{tr("全额报销", "Fully reimbursed")}</small>{:else if reimbursementStatus(item) === "partial"}<small>{tr("部分报销", "Partly reimbursed")}</small>{/if}</span
+                ><span class="cost-values">{#if reimbursementStatus(item) !== "none" && cost?.bill != null && cost?.actual != null && cost.bill !== cost.actual}<del title={labels.billedCost}>{money(cost.bill)}</del>{/if}<strong>{money(cost?.actual)}</strong></span>{#if reimbursementStatus(item) === "full"}<small>{tr("全额报销", "Fully reimbursed")}</small>{:else if reimbursementStatus(item) === "partial"}<small>{tr("部分报销", "Partly reimbursed")}</small>{/if}</span
               ><span class="chevron"><Icon name="chevron" size={16}/></span>
             </button>{/each}
         </div>{/if}

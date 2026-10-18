@@ -395,3 +395,15 @@ pre { font-family: ui-monospace, SFMono-Regular, monospace; font-size: 12px; lin
 .chart-legend { display: flex; align-items: center; gap: 6px; }
 .chart-legend i { width: 10px; height: 7px; border-radius: 2px; background: var(--text); }
 .chart-legend .legend-reimbursed { background: var(--muted); opacity: .35; margin-left: 8px; }
+
+.cost-values { display: flex; justify-content: flex-end; align-items: baseline; gap: 7px; flex-wrap: wrap; }
+.panel .list-head { display: grid; grid-template-columns: 1fr 1fr; gap: 5px 8px; }
+.panel .sort-controls { display: contents; }
+.panel .sort-controls select { width: 100%; max-width: none; }
+.panel .cost-basis { justify-content: flex-end; min-width: 0; }
+.panel .cost-basis select { min-width: 0; flex: 1; }
+.panel .cost-values { gap: 4px; }
+.panel .asset-cost del { font-size: 10px; }
+.panel .page-header { padding-bottom: 12px; }
+.panel .overview-heading { margin-bottom: 10px; }
+.panel .overview { padding-bottom: 14px; }

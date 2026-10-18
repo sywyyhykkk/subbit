@@ -18,7 +18,13 @@
   const total = $derived(Number(summary[basis] ?? 0));
   const available = $derived(summary.missingRates.length === 0);
   const unit = (p: string) => ({hour: tr("小时", "hour"), day: tr("天", "day"), month: tr("月", "month"), year: tr("年", "year")}[p] ?? p);
-  const money = (v: string | null) => v == null ? "—" : new Intl.NumberFormat(en ? "en-US" : "zh-CN", { style: "currency", currency: summary.currency, minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(v));
+  const money = (v: string | null) => {
+    if (v == null) return "—";
+    const digits = summary.period === "hour" ? 4 : 2;
+    const options = { minimumFractionDigits: digits, maximumFractionDigits: digits };
+    if (snapshot.database.settings.currencySymbol === false) return `${summary.currency} ${Number(v).toLocaleString(en ? "en-US" : "zh-CN", options)}`;
+    return new Intl.NumberFormat(en ? "en-US" : "zh-CN", { ...options, style: "currency", currency: summary.currency }).format(Number(v));
+  };
   const share = (v: string | null) => total > 0 ? Math.max(0, Math.min(100, Number(v ?? 0) / total * 100)) : 0;
   const categoryName = (id: string) => { const c = categories.find(c => c.id === id); return c ? (en ? c.en : c.zh) : id; };
   const rankedCategories = $derived([...summary.categories].sort((a,b) => Number(b[basis]) - Number(a[basis])));

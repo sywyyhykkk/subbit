@@ -362,3 +362,7 @@ pre { font-family: ui-monospace, SFMono-Regular, monospace; font-size: 12px; lin
 .backup-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--line); }
 .backup-row small { display: block; margin-top: 4px; color: var(--muted); }
 .backup-row button { flex-shrink: 0; }
+
+.cost-basis { display: flex; flex-direction: row; align-items: center; gap: 4px; flex-shrink: 0; white-space: nowrap; }
+.cost-basis select { width: auto; min-height: 30px; padding: 4px 26px 4px 9px; font-size: 12px; }
+.asset-cost del { color: var(--muted); font-size: 12px; font-variant-numeric: tabular-nums; }

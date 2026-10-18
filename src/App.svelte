@@ -58,12 +58,14 @@
     category = $state("all"),
     search = $state(""),
     filter = $state("all");
-  let sortBy = $state("added"), sortOrder = $state("desc"), paymentFilter = $state("all");
+  let costBasis = $state<"bill" | "actual">("bill");
+  let sortBy = $state("price"), sortOrder = $state("desc"), paymentFilter = $state("all");
   const viewKey = "subbit.asset-view";
   function restoreView() {
     try {
       const saved = JSON.parse(localStorage.getItem(viewKey) ?? "{}");
-      sortBy = saved.sortBy === "price" ? "price" : "added";
+      sortBy = saved.sortBy === "added" ? "added" : "price";
+      costBasis = saved.costBasis === "actual" ? "actual" : "bill";
       sortOrder = saved.sortOrder === "asc" ? "asc" : "desc";
       paymentFilter = typeof saved.payment === "string" ? saved.payment : "all";
       category = typeof saved.category === "string" ? saved.category : "all";
@@ -72,7 +74,7 @@
   }
   restoreView();
   $effect(() => {
-    const saved = { sortBy, sortOrder, payment: paymentFilter, category, kind: filter };
+    const saved = { sortBy, sortOrder, costBasis, payment: paymentFilter, category, kind: filter };
     try { localStorage.setItem(viewKey, JSON.stringify(saved)); } catch { /* Storage can be unavailable in browser previews. */ }
   });
   let offline = $state(false);
@@ -124,7 +126,7 @@
   const assetCategories = $derived([...categories, ...Array.from(new Set(entries.map((s) => s.category)))
     .filter((id) => !categories.some((c) => c.id === id)).map((id) => ({ id, zh: id, en: id, icon: "" }))]);
   const filtered = $derived.by(() => {
-    const rows = new Map(snap?.summary.rows.map((r) => [r.id, r.actual]));
+    const rows = new Map(snap?.summary.rows.map((r) => [r.id, r[costBasis]]));
     return entries.filter(
       (s) =>
         (category === "all" || s.category === category) &&
@@ -828,7 +830,7 @@
           <select aria-label={tr("支付方式", "Payment method")} bind:value={paymentFilter}><option value="all">{tr("全部支付方式", "All payments")}</option><option value="">{tr("未设置", "Not set")}</option>{#each paymentMethods as method}<option value={method[0]}>{method[en ? 2 : 1]}</option>{/each}</select>
           <select aria-label={tr("排序依据", "Sort by")} bind:value={sortBy}><option value="added">{tr("添加时间", "Date added")}</option><option value="price">{tr("价格", "Price")}</option></select>
           <select aria-label={tr("排序方向", "Sort order")} bind:value={sortOrder}><option value="desc">{tr("降序", "Descending")}</option><option value="asc">{tr("升序", "Ascending")}</option></select>
-        </div><span>{labels.personalCost} / {unitLabel(period)}</span>
+        </div><label class="cost-basis"><select aria-label={tr("费用口径", "Cost basis")} bind:value={costBasis}><option value="bill">{labels.billedCost}</option><option value="actual">{labels.personalCost}</option></select><span>/ {unitLabel(period)}</span></label>
       </div>
       {#if loading}<div class="empty-state">
           {tr("正在读取本地数据…", "Loading your local data…")}
@@ -895,7 +897,7 @@
                 ></span
               >
               <span class="asset-cost"
-                ><strong>{money(cost?.actual)}</strong>{#if reimbursementStatus(item) === "full"}<small>{tr("全额报销", "Fully reimbursed")}</small>{:else if reimbursementStatus(item) === "partial"}<small>{tr("部分报销", "Partly reimbursed")}</small>{/if}</span
+                >{#if reimbursementStatus(item) !== "none" && cost?.bill != null && cost?.actual != null && cost.bill !== cost.actual}<del title={labels.billedCost}>{money(cost.bill)}</del>{/if}<strong>{money(cost?.actual)}</strong>{#if reimbursementStatus(item) === "full"}<small>{tr("全额报销", "Fully reimbursed")}</small>{:else if reimbursementStatus(item) === "partial"}<small>{tr("部分报销", "Partly reimbursed")}</small>{/if}</span
               ><span class="chevron"><Icon name="chevron" size={16}/></span>
             </button>{/each}
         </div>{/if}

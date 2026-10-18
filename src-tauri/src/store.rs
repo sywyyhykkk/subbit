@@ -213,6 +213,7 @@ impl Store {
                 .subscriptions
                 .iter()
                 .any(|s| s.name.to_lowercase() == r.name.to_lowercase() && s.id != r.id)
+                || records.iter().any(|s| s.name.to_lowercase() == r.name.to_lowercase() && s.id != r.id)
             {
                 duplicates.push(r.id.clone());
             }

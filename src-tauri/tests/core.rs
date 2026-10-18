@@ -401,3 +401,17 @@ fn replay_does_not_touch_revision_files_or_later_edits() {
     }
     assert_eq!(store.read().unwrap().0.subscriptions[0].plan, "Changed");
 }
+
+#[test]
+fn names_within_batch_require_confirmation_even_for_empty_store() {
+    let (_dir, store) = store();
+    store.update(|db| { db.settings.mcp_enabled = true; Ok(()) }).unwrap();
+    let mut second = sample(); second.id = "two".into(); second.name = "EXAMPLE".into();
+    let records = vec![sample(), second];
+    let db = store.read().unwrap().0;
+    let preview = Store::preview_batch(&db, &records).unwrap();
+    assert_eq!(preview["possibleDuplicates"], serde_json::json!(["one", "two"]));
+    assert!(store.import_batch("same-name".into(), records.clone(), false).is_err());
+    assert_eq!(store.read().unwrap().0.revision, db.revision);
+    assert_eq!(store.import_batch("same-name".into(), records, true).unwrap()["added"], 2);
+}

@@ -108,10 +108,14 @@ impl Store {
         Ok(Some((db, stamp)))
     }
     pub fn update<T>(&self, f: impl FnOnce(&mut Database) -> Result<T>) -> Result<T> {
+        self.update_if_changed(|db| f(db).map(|result| (result, true)))
+    }
+    pub(crate) fn update_if_changed<T>(&self, f: impl FnOnce(&mut Database) -> Result<(T, bool)>) -> Result<T> {
         let _lock = self.lock()?;
         let path = self.location()?;
         let mut db = Self::read_at(&path)?;
-        let result = f(&mut db)?;
+        let (result, changed) = f(&mut db)?;
+        if !changed { return Ok(result); }
         db.validate()?;
         db.revision += 1;
         write_json(&path, &db, true)?;
@@ -228,13 +232,13 @@ impl Store {
         if batch.is_empty() || batch.len() > 100 {
             return Err("A stable importId is required".into());
         }
-        self.update(|db|{
+        self.update_if_changed(|db|{
             if !db.settings.mcp_enabled {return Err("Enable MCP in Subbit settings first".into());}
-            if let Some(receipt)=db.imports.get(&batch){if receipt.records!=records{return Err("importId was already used for different records".into());}return Ok(json!({"added":0,"skipped":records.len(),"replayed":true}));}
+            if let Some(receipt)=db.imports.get(&batch){if receipt.records!=records{return Err("importId was already used for different records".into());}return Ok((json!({"added":0,"skipped":records.len(),"replayed":true}), false));}
             let result=Self::preview_batch(db,&records)?;
             if !allow_duplicates && !result["possibleDuplicates"].as_array().unwrap().is_empty(){return Err("Possible duplicates; preview and explicitly set allowDuplicates to keep separate accounts".into());}
             for r in &records {if !db.subscriptions.iter().any(|s|s.id==r.id){db.subscriptions.push(r.clone());}}
-            db.imports.insert(batch,Receipt{records,added:result["added"].as_u64().unwrap() as usize});Ok(result)
+            db.imports.insert(batch,Receipt{records,added:result["added"].as_u64().unwrap() as usize});Ok((result, true))
         })
     }
 }

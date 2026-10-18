@@ -124,17 +124,17 @@ pub fn validate_import(rates: &BTreeMap<String, Rate>) -> Result<()> {
 pub fn import(store: &Store, id: String, revision: u64, rates: BTreeMap<String, Rate>) -> Result<Value> {
     validate_import(&rates)?;
     if id.is_empty() || id.len() > 100 { return Err("A stable importId is required".into()); }
-    store.update(|db| {
+    store.update_if_changed(|db| {
         if !db.settings.mcp_enabled { return Err("MCP is disabled".into()); }
         if let Some(previous) = db.rate_imports.get(&id) {
             if previous != &rates { return Err("importId was used for different rates".into()); }
-            return Ok(serde_json::json!({"replayed":true,"updated":0}));
+            return Ok((serde_json::json!({"replayed":true,"updated":0}), false));
         }
         if db.revision != revision { return Err("Data changed; preview rates again".into()); }
         db.rates.extend(rates.clone());
         let count = rates.len();
         db.rate_imports.insert(id, rates);
-        Ok(serde_json::json!({"updated":count,"replayed":false}))
+        Ok((serde_json::json!({"updated":count,"replayed":false}), true))
     })
 }
 
@@ -150,7 +150,13 @@ mod tests {
         let rates = BTreeMap::from([("CNY".into(), Rate { usd: "0.14".into(), as_of: "2026-10-17T12:00:00Z".into() })]);
         import(&store, "one".into(), revision, rates.clone()).unwrap();
         assert_eq!(store.read().unwrap().0.usd_rate("CNY").unwrap().to_string(), "0.2");
+        let (before, path) = store.read().unwrap();
+        let bytes = std::fs::read(&path).unwrap();
+        let backup = std::fs::read(path.with_extension("json.bak")).unwrap();
         assert_eq!(import(&store, "one".into(), revision, rates.clone()).unwrap()["replayed"], true);
+        assert_eq!(store.read().unwrap().0.revision, before.revision);
+        assert_eq!(std::fs::read(&path).unwrap(), bytes);
+        assert_eq!(std::fs::read(path.with_extension("json.bak")).unwrap(), backup);
         assert!(import(&store, "two".into(), revision, rates.clone()).is_err());
         let mut changed = rates; changed.get_mut("CNY").unwrap().usd = "0.15".into();
         assert!(import(&store, "one".into(), revision, changed).is_err());

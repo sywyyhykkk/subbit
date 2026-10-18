@@ -385,3 +385,19 @@ fn daily_costs_match_annual_costs_and_allow_default_period() {
     assert_eq!(result["actual"], "0");
     assert_eq!(result["reimbursed"], "1");
 }
+
+#[test]
+fn replay_does_not_touch_revision_files_or_later_edits() {
+    let (dir, store) = store();
+    store.update(|db| { db.settings.mcp_enabled = true; Ok(()) }).unwrap();
+    store.import_batch("replay".into(), vec![sample()], false).unwrap();
+    let mut changed = sample(); changed.plan = "Changed".into();
+    store.save(changed, store.read().unwrap().0.revision).unwrap();
+    let paths = [dir.path().join("subscriptions.json"), dir.path().join("subscriptions.json.bak"), dir.path().join("location.json")];
+    let before: Vec<_> = paths.iter().map(|p| (std::fs::read(p).unwrap(), std::fs::metadata(p).unwrap().modified().unwrap())).collect();
+    store.import_batch("replay".into(), vec![sample()], false).unwrap();
+    for (p, expected) in paths.iter().zip(before) {
+        assert_eq!((std::fs::read(p).unwrap(), std::fs::metadata(p).unwrap().modified().unwrap()), expected);
+    }
+    assert_eq!(store.read().unwrap().0.subscriptions[0].plan, "Changed");
+}

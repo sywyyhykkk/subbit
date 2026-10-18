@@ -27,6 +27,7 @@ jobs:
             arch: x64
     runs-on: ${{ matrix.os }}
     env:
+      SUBBIT_CONFIG_DIR: ${{ github.workspace }}/.subbit-test-data
       TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
       TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ''
     steps:
@@ -63,6 +64,16 @@ jobs:
           if (process.env.GITHUB_REF_TYPE === 'tag') assert.equal(process.env.GITHUB_REF_NAME, `v${version}`);
           JS
       - run: npm run build
+      - name: Verify test storage isolation
+        shell: bash
+        run: |
+          python - <<'PYTHON'
+          import os, pathlib
+          root = pathlib.Path(os.environ['SUBBIT_CONFIG_DIR']).resolve()
+          assert not (root / 'location.json').exists(), 'Unexpected data location pointer'
+          assert (root / 'data' / 'subscriptions.json').is_relative_to(root)
+          print('Isolated test data and backup directory:', root / 'data')
+          PYTHON
       - run: cargo test --locked --manifest-path src-tauri/Cargo.toml
       - name: Build architecture-specific DMG
         if: runner.os == 'macOS'

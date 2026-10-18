@@ -8,17 +8,17 @@ Rust + Tauri 2 + Svelte 5. macOS and Windows. No account, server, or bundled bro
 
 ## Download and install
 
-Get [Subbit 0.0.4](https://github.com/sywyyhykkk/subbit/releases/tag/v0.0.4):
+Get [Subbit 0.0.5](https://github.com/sywyyhykkk/subbit/releases/tag/v0.0.5):
 
-- [macOS Apple Silicon DMG](https://github.com/sywyyhykkk/subbit/releases/download/v0.0.4/Subbit_0.0.4_macos-arm64.dmg): macOS 12+, Apple M-series chips.
-- [macOS Intel DMG](https://github.com/sywyyhykkk/subbit/releases/download/v0.0.4/Subbit_0.0.4_macos-x86_64.dmg): macOS 12+, Intel processors.
-- [Windows x64 setup EXE](https://github.com/sywyyhykkk/subbit/releases/download/v0.0.4/Subbit_0.0.4_windows-x64-setup.exe): Windows 10/11 on Intel/AMD. Run the installer, then launch from the Start menu.
+- [macOS Apple Silicon DMG](https://github.com/sywyyhykkk/subbit/releases/download/v0.0.5/Subbit_0.0.5_macos-arm64.dmg): macOS 12+, Apple M-series chips.
+- [macOS Intel DMG](https://github.com/sywyyhykkk/subbit/releases/download/v0.0.5/Subbit_0.0.5_macos-x86_64.dmg): macOS 12+, Intel processors.
+- [Windows x64 setup EXE](https://github.com/sywyyhykkk/subbit/releases/download/v0.0.5/Subbit_0.0.5_windows-x64-setup.exe): Windows 10/11 on Intel/AMD. Run the installer, then launch from the Start menu.
 
 On macOS, check Apple menu → About This Mac to identify your chip, choose the matching DMG, then drag Subbit into Applications.
 
-No development tools are required. Windows installs WebView2 over the internet if it is missing. Choose an installer rather than GitHub's “Source code” archives. This release is not publisher-signed or Apple-notarized, so Gatekeeper or SmartScreen may require confirmation at first launch. See the [release notes](docs/releases/0.0.4.md) for installation conditions and validation details.
+No development tools are required. Windows installs WebView2 over the internet if it is missing. Choose an installer rather than GitHub's “Source code” archives. This release is not publisher-signed or Apple-notarized, so Gatekeeper or SmartScreen may require confirmation at first launch. See the [release notes](docs/releases/0.0.5.md) for installation conditions and validation details.
 
-From 0.0.2 or 0.0.3, install 0.0.4 using **Settings → About → Check for updates**. When upgrading from 0.0.1, install 0.0.4 manually once.
+From 0.0.2–0.0.4, install 0.0.5 using **Settings → About → Check for updates**. When upgrading from 0.0.1, install 0.0.5 manually once.
 
 
 ## What it does
@@ -35,6 +35,12 @@ From 0.0.2 or 0.0.3, install 0.0.4 using **Settings → About → Check for upda
 - Ten local stdio MCP tools for Agent-assisted import and querying.
 
 Verified fixed-price plans prefill a USD reference price and convert it to the selected currency using your fixed or cached exchange rate. Monthly and annual billing use their own published prices. You can edit the amount or choose a custom plan; saved bills remain unchanged. Usage-based cloud servers, custom quotes and plans without verified prices require manual entry. Regional pricing and taxes may differ from the reference. Subbit records costs; it never charges a card or renews a real service.
+
+## Spending reports and backups (0.0.5)
+
+Open Statistics beside Settings for category costs, top assets and subscription / lifetime composition. Export a clean PNG report to share. Reports cover all active assets and show current amortized costs, not historical payments. Choose bill or actual cost for list sorting; the choice is remembered.
+
+Keep at most three asset backups: two recent versions and one pre-import checkpoint. Settings → Data previews the date and asset count before restoring. Ordinary saves and restores preserve the import checkpoint; the next successful import replaces it. Identical import retries leave data, revisions and backups unchanged.
 
 ## Domains and offline mode (0.0.4)
 

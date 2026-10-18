@@ -633,10 +633,7 @@
       preview = null;
       modal = "";
       await reload(true);
-      notice = tr(
-        "已导入，原数据已备份",
-        "Imported. Previous data was backed up.",
-      );
+      notice = restoringBackup ? tr("已恢复，恢复前的数据已备份", "Restored. Previous data was backed up.") : tr("已导入，原数据已备份", "Imported. Previous data was backed up.");
     });
   }
   async function moveData() {
@@ -1486,8 +1483,8 @@
             {#if restoringBackup}<p>{tr("恢复备份", "Restore backup")} · {backupDate}</p>{/if}
             <strong
               >{tr(
-                `导入 ${preview.subscriptions.length} 项资产`,
-                `Import ${preview.subscriptions.length} assets`,
+                `${restoringBackup ? "恢复" : "导入"} ${preview.subscriptions.length} 项资产`,
+                `${restoringBackup ? "Restore" : "Import"} ${preview.subscriptions.length} assets`,
               )}</strong
             >
             <p>

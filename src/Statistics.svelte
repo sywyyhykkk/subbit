@@ -35,13 +35,13 @@
       const report: ReportData = {
         title: tr("花销报告", "Spending report"),
         subtitle: `${snapshot.key?.day ?? new Date().toLocaleDateString()} · ${summary.currency} / ${unit(summary.period)} · ${tr("全部有效资产", "All active assets")}`,
-        mainLabel: tr("实际花销", "Actual cost"), main: money(summary.actual),
-        secondary: `${tr("账单花销", "Bill cost")} ${money(summary.bill)}    ${tr("报销抵扣", "Reimbursed")} ${money(summary.reimbursed)}`,
+        mainLabel: tr("实际花销", "Personal cost"), main: money(summary.actual),
+        secondary: `${tr("账单花销", "Billed cost")} ${money(summary.bill)}    ${tr("报销抵扣", "Reimbursed")} ${money(summary.reimbursed)}`,
         categoryTitle: rankedCategories.length > 10 ? tr("分类花销 TOP 10", "Top 10 categories") : tr("分类花销", "By category"), topTitle: tr("花销最高 TOP 5", "Top 5 assets"),
-        basis: basis === "bill" ? tr("账单花销", "Bill cost") : tr("实际花销", "Actual cost"),
+        basis: basis === "bill" ? tr("账单花销", "Billed cost") : tr("实际花销", "Personal cost"),
         categories: rankedCategories.slice(0,10).map(c => ({name: categoryName(c.id), value: `${money(c[basis])} · ${share(c[basis]).toFixed(1)}%`, fraction: share(c[basis]) / 100})),
         top: top.map(c => ({ name: c.name, value: money(c[basis]), fraction: max ? Number(c.bill) / max : 0, actualFraction: max ? Number(c.actual) / max : 0 })),
-        legend: tr("深灰：实际花销 · 浅灰：报销抵扣", "Dark: actual cost · Light: reimbursed"),
+        legend: tr("深灰：实际花销 · 浅灰：报销抵扣", "Dark: personal cost · Light: reimbursed"),
         footer: `${summary.activeCount} ${tr("项有效资产 · 当前费用折算，非历史付款流水", "active assets · Current amortized costs, not payment history")}`,
       };
       const canvas = drawReport(report);
@@ -63,17 +63,17 @@
     <div class="statistics-controls">
       <select aria-label={tr("统计币种", "Report currency")} value={summary.currency} disabled={pending || exporting} onchange={e => change(e.currentTarget.value, summary.period)}>{#each currencies.slice(0,26) as c}<option>{c}</option>{/each}</select>
       <select aria-label={tr("统计周期", "Report period")} value={summary.period} disabled={pending || exporting} onchange={e => change(summary.currency, e.currentTarget.value)}>{#each ["hour","day","month","year"] as p}<option value={p}>{tr("每", "Per ")}{unit(p)}</option>{/each}</select>
-      <select aria-label={tr("统计口径", "Report basis")} bind:value={basis} disabled={exporting}><option value="bill">{tr("账单花销", "Bill cost")}</option><option value="actual">{tr("实际花销", "Actual cost")}</option></select>
+      <select aria-label={tr("统计口径", "Report basis")} bind:value={basis} disabled={exporting}><option value="bill">{tr("账单花销", "Billed cost")}</option><option value="actual">{tr("实际花销", "Personal cost")}</option></select>
     </div>
     <p class="hint statistics-scope">{tr("全部有效资产", "All active assets")} · {snapshot.key?.day ?? ""}</p>
-    <div class="statistics-total"><span>{tr("实际花销", "Actual cost")}</span><strong>{money(summary.actual)}<small> / {unit(summary.period)}</small></strong><p>{tr("账单花销", "Bill cost")} {money(summary.bill)} <span>·</span> {tr("报销抵扣", "Reimbursed")} {money(summary.reimbursed)}</p></div>
+    <div class="statistics-total"><span>{tr("实际花销", "Personal cost")}</span><strong>{money(summary.actual)}<small> / {unit(summary.period)}</small></strong><p>{tr("账单花销", "Billed cost")} {money(summary.bill)} <span>·</span> {tr("报销抵扣", "Reimbursed")} {money(summary.reimbursed)}</p></div>
     {#if !available}<p class="hint">{tr("部分资产缺少汇率，请补齐后查看图表和导出报告。", "Add missing exchange rates to view charts and export a report.")}</p>
     {:else if !summary.activeCount}<p class="empty-state">{tr("暂无有效资产", "No active assets yet")}</p>
     {:else}
       <section class="statistics-section"><h3>{tr("分类花销", "By category")}</h3>
         {#each rankedCategories as group}<div class="chart-row"><div><span title={categoryName(group.id)}>{categoryName(group.id)}</span><span>{money(group[basis])} <small>{share(group[basis]).toFixed(1)}%</small></span></div><div class="chart-track"><div class="chart-fill" style:width={`${share(group[basis])}%`}></div></div></div>{/each}
       </section>
-      <section class="statistics-section"><h3>{tr("花销最高 TOP 5", "Top 5 assets")}</h3><p class="hint chart-legend">{tr("深灰：实际花销 · 浅灰：报销抵扣", "Dark: actual cost · Light: reimbursed")}</p>
+      <section class="statistics-section"><h3>{tr("花销最高 TOP 5", "Top 5 assets")}</h3><p class="hint chart-legend"><i class="legend-personal"></i>{tr("实际花销", "Personal cost")} <i class="legend-reimbursed"></i>{tr("报销抵扣", "Reimbursed")}</p>
         {#each top as row}<div class="chart-row"><div><span title={row.name}>{row.name}</span><span>{money(row[basis])}</span></div><div class="chart-track"><div class="chart-bill" style:width={`${max ? Number(row.bill) / max * 100 : 0}%`}></div><div class="chart-fill" style:width={`${max ? Number(row.actual) / max * 100 : 0}%`}></div></div></div>{/each}
       </section>
       <section class="statistics-section"><h3>{tr("订阅 / 买断构成", "Subscriptions / lifetime")}</h3><div class="kind-track">{#each summary.kinds as kind}<div class:lifetime={kind.id === "lifetime"} style:width={`${share(kind[basis])}%`}></div>{/each}</div><div class="kind-labels">{#each summary.kinds as kind}<span>{kind.id === "lifetime" ? tr("买断", "Lifetime") : tr("订阅", "Subscriptions")} · {kind.count}<strong>{money(kind[basis])} · {share(kind[basis]).toFixed(1)}%</strong></span>{/each}</div></section>

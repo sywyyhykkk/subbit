@@ -122,6 +122,14 @@ fn preview_file(path: PathBuf) -> Result<Database> {
     Store::system()?.preview_file(path)
 }
 #[tauri::command]
+fn save_report(path: PathBuf, bytes: Vec<u8>) -> Result<()> {
+    if path.extension().and_then(|s|s.to_str()).map(|s|s.eq_ignore_ascii_case("png")) != Some(true)
+        || bytes.len() > 20_000_000 || !bytes.starts_with(b"\x89PNG\r\n\x1a\n") {
+        return Err("Choose a PNG file for the report".into());
+    }
+    std::fs::write(path, bytes).map_err(|e|e.to_string())
+}
+#[tauri::command]
 fn restore_data(database: Database, revision: u64, app: tauri::AppHandle) -> Result<()> {
     Store::system()?.replace_snapshot(database, revision, false)?;
     let _ = app.emit("data-changed", ());
@@ -187,7 +195,7 @@ fn show_main(app: &tauri::AppHandle, action: &str) -> tauri::Result<()> {
     if let Some(window) = app.get_webview_window("main") {
         window.show()?;
         window.set_focus()?;
-        if ["settings", "add", "about"].contains(&action) {
+        if ["settings", "add", "about", "statistics"].contains(&action) {
             window.emit(&format!("open-{action}"), ())?;
         }
         return Ok(());
@@ -200,6 +208,7 @@ fn show_main(app: &tauri::AppHandle, action: &str) -> tauri::Result<()> {
                 "settings" => "index.html?settings=1",
                 "add" => "index.html?add=1",
                 "about" => "index.html?about=1",
+                "statistics" => "index.html?statistics=1",
                 _ => "index.html",
             }
             .into(),
@@ -302,6 +311,7 @@ pub fn run() {
             preview_file,
             replace_data,
             restore_data,
+            save_report,
             move_data,
             locate_data,
             open_main,

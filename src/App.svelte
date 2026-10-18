@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount, tick } from "svelte";
   import Icon from "./Icon.svelte";
+  import Statistics from "./Statistics.svelte";
   import ReleaseNotes from "./ReleaseNotes.svelte";
   import { localTimestamp, bytesLabel, reimbursementStatus } from "./display";
   import DatePicker from "./DatePicker.svelte";
@@ -49,6 +50,7 @@
     const service = services.find((s) => s.id === id);
     return (service && directory.catalog.icons[service.icon]) || bundledServiceIcon(id);
   };
+  let showStatistics = $state(false);
   let loading = $state(true),
     busy = $state(false),
     error = $state(""),
@@ -288,6 +290,7 @@
             missingRates: [],
             rows: [],
             activeCount: 0,
+            categories: [], kinds: [],
           },
         };
         return;
@@ -748,12 +751,14 @@
         await call("panel_ready", { dark });
       }
       if (new URLSearchParams(location.search).has("settings")) await settings();
+      if (new URLSearchParams(location.search).has("statistics")) showStatistics = true;
       if (new URLSearchParams(location.search).has("about")) { await settings(); settingsTab = "about"; }
       if (isTauri()) {
         if (new URLSearchParams(location.search).has("add")) await picker();
-        for (const name of ["network-changed", "data-changed", "open-settings", "open-add", "open-about"]) {
+        for (const name of ["network-changed", "data-changed", "open-settings", "open-add", "open-about", "open-statistics"]) {
           const unlisten = await listen(name, () => {
             if (name === "network-changed") void call<boolean>("offline_mode").then((value) => offline = value);
+            else if (name === "open-statistics") showStatistics = true;
             else if (name === "open-about") void settings().then(() => settingsTab = "about");
             else if (name === "open-settings") void settings();
             else if (name === "open-add") void picker();
@@ -794,6 +799,7 @@
       <div class="page-title"><h1>Subbit</h1>{#if snap?.database.settings.showLevel}<span class="level" title={spendingLevelName}>{spendingLevelName}</span>{/if}</div>
       <div class="header-actions">
         {#if !panel}<button class="icon-button" aria-label={tr("设置", "Settings")} title={tr("设置", "Settings")} onclick={settings}><Icon name="settings"/></button>{/if}
+        <button class="icon-button" aria-label={tr("统计", "Statistics")} title={tr("统计", "Statistics")} disabled={!snap} onclick={() => { if (panel) void call("open_main", {action: "statistics"}); else showStatistics = true; }}><Icon name="chart"/></button>
         <button class="primary" onclick={picker}><Icon name="plus"/>{labels.addAsset}</button>
       </div>
     </header>
@@ -1585,3 +1591,5 @@
     {:else}<button class="primary" disabled={offline || updateState !== "available"} onclick={installUpdate}>{updateState === "downloading" ? tr("正在下载并安装…", "Downloading and installing…") : tr("下载并安装", "Download and install")}</button>{/if}
   </div>
 </dialog>
+
+{#if showStatistics && snap}<Statistics snapshot={snap} {categories} {en} initialBasis={costBasis} {currencies} onclose={() => showStatistics = false} onchange={async (nextCurrency, nextPeriod) => { currency = nextCurrency; period = nextPeriod; await reload(); }}/>{/if}

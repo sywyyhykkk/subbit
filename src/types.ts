@@ -50,6 +50,7 @@ export interface CostRow {
   actual: string | null;
   elapsedDays: number;
 }
+export interface CostGroup { id: string; bill: string | null; actual: string | null; count: number; }
 export interface Snapshot {
   database: Omit<Database, "imports">;
   key: {
@@ -70,6 +71,8 @@ export interface Snapshot {
     missingRates: string[];
     rows: CostRow[];
     activeCount: number;
+    categories: CostGroup[];
+    kinds: CostGroup[];
   };
 }
 export interface Category {

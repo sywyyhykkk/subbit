@@ -36,7 +36,9 @@ with tempfile.TemporaryDirectory(prefix='subbit-mcp-') as root:
  assert call(4,'preview_import',{'records':[record]})['added']==1
  assert call(5,'list_subscriptions')['subscriptions']==[]
  assert call(6,'import_subscriptions',{'importId':'test-import','records':[record]})['added']==1
+ replay_before={path:(path.read_bytes(),path.stat().st_mtime_ns) for path in data.iterdir() if path.is_file()}
  assert call(7,'import_subscriptions',{'importId':'test-import','records':[record]})['replayed']
+ assert replay_before=={path:(path.read_bytes(),path.stat().st_mtime_ns) for path in data.iterdir() if path.is_file()}
  assert len(call(8,'list_subscriptions')['subscriptions'])==1
  total=call(9,'get_summary',{'currency':'CNY','period':'month'})
  assert total['bill']=='100' and total['actual']=='50',total

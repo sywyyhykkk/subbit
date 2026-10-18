@@ -387,6 +387,8 @@ impl Database {
         let mut missing = Vec::new();
         let mut rows = Vec::new();
         let mut active = 0;
+        let mut categories: BTreeMap<String, (Decimal, Decimal, usize)> = BTreeMap::new();
+        let mut kinds: BTreeMap<String, (Decimal, Decimal, usize)> = BTreeMap::new();
         for s in &self.subscriptions {
             let current = s.is_current(now)?;
             if current {
@@ -415,6 +417,16 @@ impl Database {
                     ))
                 })
                 .transpose()?;
+            if current {
+                for (groups, key) in [(&mut categories, &s.category), (&mut kinds, &s.kind)] {
+                    let group = groups.entry(key.clone()).or_insert((Decimal::ZERO, Decimal::ZERO, 0));
+                    group.2 += 1;
+                    if let Some((b, a)) = costs {
+                        group.0 = group.0.checked_add(b).ok_or("Total is too large")?;
+                        group.1 = group.1.checked_add(a).ok_or("Total is too large")?;
+                    }
+                }
+            }
             if let Some((b, a)) = costs {
                 bill = bill.checked_add(b).ok_or("Total is too large")?;
                 actual = actual.checked_add(a).ok_or("Total is too large")?;
@@ -423,8 +435,11 @@ impl Database {
             }
             rows.push(serde_json::json!({"id":s.id,"current":current,"dueDate":s.due_date(now)?.map(|d|d.to_string()),"bill":costs.map(|c|c.0.to_string()),"actual":costs.map(|c|c.1.to_string()),"elapsedDays":(now-date(&s.purchased_at)?).num_days()+1}));
         }
+        let groups = |values: BTreeMap<String, (Decimal, Decimal, usize)>| -> Vec<serde_json::Value> {
+            values.into_iter().map(|(id, (bill, actual, count))| serde_json::json!({"id":id,"bill":if missing.is_empty(){Some(bill.to_string())}else{None},"actual":if missing.is_empty(){Some(actual.to_string())}else{None},"count":count})).collect()
+        };
         Ok(
-            serde_json::json!({"currency":currency,"period":period,"bill":if missing.is_empty(){Some(bill.to_string())}else{None},"actual":if missing.is_empty(){Some(actual.to_string())}else{None},"reimbursed":if missing.is_empty(){Some((bill-actual).to_string())}else{None},"missingRates":missing,"rows":rows,"activeCount":active}),
+            serde_json::json!({"categories":groups(categories),"kinds":groups(kinds),"currency":currency,"period":period,"bill":if missing.is_empty(){Some(bill.to_string())}else{None},"actual":if missing.is_empty(){Some(actual.to_string())}else{None},"reimbursed":if missing.is_empty(){Some((bill-actual).to_string())}else{None},"missingRates":missing,"rows":rows,"activeCount":active}),
         )
     }
 }

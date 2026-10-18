@@ -442,3 +442,19 @@ fn backups_are_bounded_and_import_checkpoint_survives_ordinary_writes_and_restor
     assert_eq!(std::fs::read(&checkpoint).unwrap(), checkpoint_bytes);
     for (_, backup) in subbit_lib::store::backup_paths(&path) { assert!(store.export(backup).is_err()); }
 }
+
+#[test]
+fn report_groups_use_exact_costs_and_exclude_inactive_assets() {
+    let mut db = Database::default();
+    let mut a = sample(); a.category = "tools".into();
+    let mut b = a.clone(); b.id = "two".into(); b.reimbursement = "full".into();
+    let mut inactive = a.clone(); inactive.id = "off".into(); inactive.active = false;
+    db.subscriptions = vec![a,b,inactive];
+    let result = db.summary("CNY", "month", day("2026-10-18")).unwrap();
+    assert_eq!(result["categories"], serde_json::json!([{"id":"tools","bill":"200","actual":"50","count":2}]));
+    assert_eq!(result["kinds"][0]["bill"], "200");
+    db.subscriptions[0].currency = "UNKNOWN".into();
+    let missing = db.summary("CNY", "month", day("2026-10-18")).unwrap();
+    assert!(missing["categories"][0]["bill"].is_null());
+    assert!(missing["kinds"][0]["actual"].is_null());
+}

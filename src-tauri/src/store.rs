@@ -108,13 +108,17 @@ impl Store {
         Ok(Some((db, stamp)))
     }
     pub fn update<T>(&self, f: impl FnOnce(&mut Database) -> Result<T>) -> Result<T> {
+        self.update_if_changed(false, |db| f(db).map(|result| (result, true)))
+    }
+    pub(crate) fn update_if_changed<T>(&self, importing: bool, f: impl FnOnce(&mut Database) -> Result<(T, bool)>) -> Result<T> {
         let _lock = self.lock()?;
         let path = self.location()?;
         let mut db = Self::read_at(&path)?;
-        let result = f(&mut db)?;
+        let (result, changed) = f(&mut db)?;
+        if !changed { return Ok(result); }
         db.validate()?;
         db.revision += 1;
-        write_json(&path, &db, true)?;
+        write_database(&path, &db, importing)?;
         write_json(&self.root.join("location.json"), &path, false)?;
         Ok(result)
     }
@@ -165,11 +169,27 @@ impl Store {
         if path == source
             || path == self.root.join("location.json")
             || path == self.root.join("store.lock")
-            || path == source.with_extension("json.bak")
+            || backup_paths(&source).iter().any(|(_, backup)| path == *backup)
         {
             return Err("Choose a separate export file".into());
         }
         write_json(&path, &Self::read_at(&source)?, false)
+    }
+    pub fn file_info(&self) -> Result<Value> {
+        let _lock = self.lock()?;
+        let path = self.location()?;
+        let size = fs::metadata(&path).ok().map(|m| m.len());
+        let mut backups = Vec::new();
+        for (kind, backup) in backup_paths(&path) {
+            if !backup.exists() { continue; }
+            let metadata = fs::metadata(&backup).map_err(|e| e.to_string())?;
+            let modified = metadata.modified().map_err(|e| e.to_string())?;
+            let date: chrono::DateTime<chrono::Utc> = modified.into();
+            let db = Self::read_at(&backup);
+            backups.push(json!({"kind":kind,"path":backup,"size":metadata.len(),"modifiedAt":date.to_rfc3339(),"count":db.as_ref().ok().map(|d|d.subscriptions.len()),"valid":db.is_ok()}));
+        }
+        let total: u64 = backups.iter().map(|b|b["size"].as_u64().unwrap_or(0)).sum();
+        Ok(json!({"data":size,"backup":if backups.is_empty(){None}else{Some(total)},"backups":backups}))
     }
     pub fn preview_file(&self, path: PathBuf) -> Result<Database> {
         if !path.is_file() {
@@ -177,16 +197,19 @@ impl Store {
         }
         Self::read_at(&path)
     }
-    pub fn replace(&self, mut replacement: Database, revision: u64) -> Result<()> {
+    pub fn replace(&self, replacement: Database, revision: u64) -> Result<()> {
+        self.replace_snapshot(replacement, revision, true)
+    }
+    pub fn replace_snapshot(&self, mut replacement: Database, revision: u64, importing: bool) -> Result<()> {
         replacement.validate()?;
-        self.update(|db| {
+        self.update_if_changed(importing, |db| {
             if db.revision != revision {
                 return Err("Data changed; preview the import again".into());
             }
             replacement.revision = db.revision;
             replacement.settings.mcp_enabled = db.settings.mcp_enabled;
             *db = replacement;
-            Ok(())
+            Ok(((), true))
         })
     }
     pub fn preview_batch(db: &Database, records: &[Subscription]) -> Result<Value> {
@@ -209,6 +232,7 @@ impl Store {
                 .subscriptions
                 .iter()
                 .any(|s| s.name.to_lowercase() == r.name.to_lowercase() && s.id != r.id)
+                || records.iter().any(|s| s.name.to_lowercase() == r.name.to_lowercase() && s.id != r.id)
             {
                 duplicates.push(r.id.clone());
             }
@@ -228,13 +252,13 @@ impl Store {
         if batch.is_empty() || batch.len() > 100 {
             return Err("A stable importId is required".into());
         }
-        self.update(|db|{
+        self.update_if_changed(true, |db|{
             if !db.settings.mcp_enabled {return Err("Enable MCP in Subbit settings first".into());}
-            if let Some(receipt)=db.imports.get(&batch){if receipt.records!=records{return Err("importId was already used for different records".into());}return Ok(json!({"added":0,"skipped":records.len(),"replayed":true}));}
+            if let Some(receipt)=db.imports.get(&batch){if receipt.records!=records{return Err("importId was already used for different records".into());}return Ok((json!({"added":0,"skipped":records.len(),"replayed":true}), false));}
             let result=Self::preview_batch(db,&records)?;
             if !allow_duplicates && !result["possibleDuplicates"].as_array().unwrap().is_empty(){return Err("Possible duplicates; preview and explicitly set allowDuplicates to keep separate accounts".into());}
             for r in &records {if !db.subscriptions.iter().any(|s|s.id==r.id){db.subscriptions.push(r.clone());}}
-            db.imports.insert(batch,Receipt{records,added:result["added"].as_u64().unwrap() as usize});Ok(result)
+            db.imports.insert(batch,Receipt{records,added:result["added"].as_u64().unwrap() as usize});Ok((result, true))
         })
     }
 }
@@ -270,4 +294,24 @@ fn atomic_write(path: &Path, bytes: &[u8]) -> Result<()> {
     tmp.as_file().sync_all().map_err(|e| e.to_string())?;
     tmp.persist(path).map_err(|e| e.to_string())?;
     Ok(())
+}
+
+// Fixed slots keep storage bounded; ordinary writes never rotate the import checkpoint.
+pub fn backup_paths(path: &Path) -> [(&'static str, PathBuf); 3] {
+    [("latest", path.with_extension("json.bak")),
+     ("previous", path.with_extension("json.bak.2")),
+     ("import", path.with_extension("json.pre-import.bak"))]
+}
+fn write_database(path: &Path, db: &Database, importing: bool) -> Result<()> {
+    let bytes = serde_json::to_vec_pretty(db).map_err(|e| e.to_string())?;
+    if bytes.len() > 25_000_000 { return Err("Data exceeds 25 MB".into()); }
+    fs::create_dir_all(path.parent().ok_or("Invalid path")?).map_err(|e| e.to_string())?;
+    if path.exists() {
+        let old = read_file(path)?;
+        let [(_, latest), (_, previous), (_, checkpoint)] = backup_paths(path);
+        if importing { atomic_write(&checkpoint, &old)?; }
+        if latest.exists() { atomic_write(&previous, &read_file(&latest)?)?; }
+        atomic_write(&latest, &old)?;
+    }
+    atomic_write(path, &bytes)
 }

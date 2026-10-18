@@ -33,15 +33,7 @@ fn panel_ready(window: tauri::WebviewWindow, dark: bool) -> Result<()> {
 }
 #[tauri::command]
 fn data_file_info() -> Result<Value> {
-    let path = Store::system()?.location()?;
-    let size = |path: &std::path::Path| -> Result<Option<u64>> {
-        match std::fs::metadata(path) {
-            Ok(metadata) => Ok(Some(metadata.len())),
-            Err(e) if e.kind() == std::io::ErrorKind::NotFound => Ok(None),
-            Err(e) => Err(e.to_string()),
-        }
-    };
-    Ok(serde_json::json!({"data":size(&path)?,"backup":size(&path.with_extension("json.bak"))?}))
+    Store::system()?.file_info()
 }
 #[tauri::command]
 fn reveal_data(app: tauri::AppHandle) -> Result<()> {
@@ -130,6 +122,20 @@ fn preview_file(path: PathBuf) -> Result<Database> {
     Store::system()?.preview_file(path)
 }
 #[tauri::command]
+fn save_report(path: PathBuf, bytes: Vec<u8>) -> Result<()> {
+    if path.extension().and_then(|s|s.to_str()).map(|s|s.eq_ignore_ascii_case("png")) != Some(true)
+        || bytes.len() > 20_000_000 || !bytes.starts_with(b"\x89PNG\r\n\x1a\n") {
+        return Err("Choose a PNG file for the report".into());
+    }
+    std::fs::write(path, bytes).map_err(|e|e.to_string())
+}
+#[tauri::command]
+fn restore_data(database: Database, revision: u64, app: tauri::AppHandle) -> Result<()> {
+    Store::system()?.replace_snapshot(database, revision, false)?;
+    let _ = app.emit("data-changed", ());
+    Ok(())
+}
+#[tauri::command]
 fn replace_data(database: Database, revision: u64, app: tauri::AppHandle) -> Result<()> {
     Store::system()?.replace(database, revision)?;
     let _ = app.emit("data-changed", ());
@@ -189,7 +195,7 @@ fn show_main(app: &tauri::AppHandle, action: &str) -> tauri::Result<()> {
     if let Some(window) = app.get_webview_window("main") {
         window.show()?;
         window.set_focus()?;
-        if ["settings", "add", "about"].contains(&action) {
+        if ["settings", "add", "about", "statistics"].contains(&action) {
             window.emit(&format!("open-{action}"), ())?;
         }
         return Ok(());
@@ -202,6 +208,7 @@ fn show_main(app: &tauri::AppHandle, action: &str) -> tauri::Result<()> {
                 "settings" => "index.html?settings=1",
                 "add" => "index.html?add=1",
                 "about" => "index.html?about=1",
+                "statistics" => "index.html?statistics=1",
                 _ => "index.html",
             }
             .into(),
@@ -303,6 +310,8 @@ pub fn run() {
             export_data,
             preview_file,
             replace_data,
+            restore_data,
+            save_report,
             move_data,
             locate_data,
             open_main,

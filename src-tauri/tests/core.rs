@@ -385,3 +385,76 @@ fn daily_costs_match_annual_costs_and_allow_default_period() {
     assert_eq!(result["actual"], "0");
     assert_eq!(result["reimbursed"], "1");
 }
+
+#[test]
+fn replay_does_not_touch_revision_files_or_later_edits() {
+    let (dir, store) = store();
+    store.update(|db| { db.settings.mcp_enabled = true; Ok(()) }).unwrap();
+    store.import_batch("replay".into(), vec![sample()], false).unwrap();
+    let mut changed = sample(); changed.plan = "Changed".into();
+    store.save(changed, store.read().unwrap().0.revision).unwrap();
+    let paths = [dir.path().join("subscriptions.json"), dir.path().join("subscriptions.json.bak"), dir.path().join("location.json")];
+    let before: Vec<_> = paths.iter().map(|p| (std::fs::read(p).unwrap(), std::fs::metadata(p).unwrap().modified().unwrap())).collect();
+    store.import_batch("replay".into(), vec![sample()], false).unwrap();
+    for (p, expected) in paths.iter().zip(before) {
+        assert_eq!((std::fs::read(p).unwrap(), std::fs::metadata(p).unwrap().modified().unwrap()), expected);
+    }
+    assert_eq!(store.read().unwrap().0.subscriptions[0].plan, "Changed");
+}
+
+#[test]
+fn names_within_batch_require_confirmation_even_for_empty_store() {
+    let (_dir, store) = store();
+    store.update(|db| { db.settings.mcp_enabled = true; Ok(()) }).unwrap();
+    let mut second = sample(); second.id = "two".into(); second.name = "EXAMPLE".into();
+    let records = vec![sample(), second];
+    let db = store.read().unwrap().0;
+    let preview = Store::preview_batch(&db, &records).unwrap();
+    assert_eq!(preview["possibleDuplicates"], serde_json::json!(["one", "two"]));
+    assert!(store.import_batch("same-name".into(), records.clone(), false).is_err());
+    assert_eq!(store.read().unwrap().0.revision, db.revision);
+    assert_eq!(store.import_batch("same-name".into(), records, true).unwrap()["added"], 2);
+}
+
+#[test]
+fn backups_are_bounded_and_import_checkpoint_survives_ordinary_writes_and_restore() {
+    let (_dir, store) = store();
+    store.update(|db| { db.settings.mcp_enabled = true; Ok(()) }).unwrap();
+    let (before_import, path) = store.read().unwrap();
+    store.import_batch("protected".into(), vec![sample()], false).unwrap();
+    let checkpoint = path.with_extension("json.pre-import.bak");
+    let checkpoint_bytes = std::fs::read(&checkpoint).unwrap();
+    assert_eq!(serde_json::from_slice::<Database>(&checkpoint_bytes).unwrap().revision, before_import.revision);
+    for i in 0..8 {
+        store.update(|db| { db.subscriptions[0].notes = format!("edit {i}"); Ok(()) }).unwrap();
+    }
+    assert_eq!(std::fs::read(&checkpoint).unwrap(), checkpoint_bytes);
+    assert_eq!(store.file_info().unwrap()["backups"].as_array().unwrap().len(), 3);
+    let backup_count = std::fs::read_dir(path.parent().unwrap()).unwrap()
+        .filter_map(|e|e.ok()).filter(|e|e.file_name().to_string_lossy().contains(".bak")).count();
+    assert_eq!(backup_count, 3);
+    let current = std::fs::read(&path).unwrap();
+    let revision = store.read().unwrap().0.revision;
+    store.replace_snapshot(store.preview_file(checkpoint.clone()).unwrap(), revision, false).unwrap();
+    assert!(store.read().unwrap().0.subscriptions.is_empty());
+    assert_eq!(store.read().unwrap().0.revision, revision + 1);
+    assert_eq!(std::fs::read(path.with_extension("json.bak")).unwrap(), current);
+    assert_eq!(std::fs::read(&checkpoint).unwrap(), checkpoint_bytes);
+    for (_, backup) in subbit_lib::store::backup_paths(&path) { assert!(store.export(backup).is_err()); }
+}
+
+#[test]
+fn report_groups_use_exact_costs_and_exclude_inactive_assets() {
+    let mut db = Database::default();
+    let mut a = sample(); a.category = "tools".into();
+    let mut b = a.clone(); b.id = "two".into(); b.reimbursement = "full".into();
+    let mut inactive = a.clone(); inactive.id = "off".into(); inactive.active = false;
+    db.subscriptions = vec![a,b,inactive];
+    let result = db.summary("CNY", "month", day("2026-10-18")).unwrap();
+    assert_eq!(result["categories"], serde_json::json!([{"id":"tools","bill":"200","actual":"50","count":2}]));
+    assert_eq!(result["kinds"][0]["bill"], "200");
+    db.subscriptions[0].currency = "UNKNOWN".into();
+    let missing = db.summary("CNY", "month", day("2026-10-18")).unwrap();
+    assert!(missing["categories"][0]["bill"].is_null());
+    assert!(missing["kinds"][0]["actual"].is_null());
+}

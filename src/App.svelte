@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount, tick } from "svelte";
   import Icon from "./Icon.svelte";
+  import Statistics from "./Statistics.svelte";
   import ReleaseNotes from "./ReleaseNotes.svelte";
   import { localTimestamp, bytesLabel, reimbursementStatus } from "./display";
   import DatePicker from "./DatePicker.svelte";
@@ -49,6 +50,7 @@
     const service = services.find((s) => s.id === id);
     return (service && directory.catalog.icons[service.icon]) || bundledServiceIcon(id);
   };
+  let showStatistics = $state(false);
   let loading = $state(true),
     busy = $state(false),
     error = $state(""),
@@ -58,12 +60,14 @@
     category = $state("all"),
     search = $state(""),
     filter = $state("all");
-  let sortBy = $state("added"), sortOrder = $state("desc"), paymentFilter = $state("all");
+  let costBasis = $state<"bill" | "actual">("bill");
+  let sortBy = $state("price"), sortOrder = $state("desc"), paymentFilter = $state("all");
   const viewKey = "subbit.asset-view";
   function restoreView() {
     try {
       const saved = JSON.parse(localStorage.getItem(viewKey) ?? "{}");
-      sortBy = saved.sortBy === "price" ? "price" : "added";
+      sortBy = saved.sortBy === "added" ? "added" : "price";
+      costBasis = saved.costBasis === "actual" ? "actual" : "bill";
       sortOrder = saved.sortOrder === "asc" ? "asc" : "desc";
       paymentFilter = typeof saved.payment === "string" ? saved.payment : "all";
       category = typeof saved.category === "string" ? saved.category : "all";
@@ -72,7 +76,7 @@
   }
   restoreView();
   $effect(() => {
-    const saved = { sortBy, sortOrder, payment: paymentFilter, category, kind: filter };
+    const saved = { sortBy, sortOrder, costBasis, payment: paymentFilter, category, kind: filter };
     try { localStorage.setItem(viewKey, JSON.stringify(saved)); } catch { /* Storage can be unavailable in browser previews. */ }
   });
   let offline = $state(false);
@@ -100,7 +104,9 @@
     rateCode = $state("USD"),
     rateValue = $state("");
   let preview: Database | null = $state(null);
-  let fileInfo: {data: number | null; backup: number | null} | null = $state(null);
+  let restoringBackup = $state(false);
+  let backupDate = $state("");
+  let fileInfo: {data: number | null; backup: number | null; backups: {kind: string; path: string; size: number; modifiedAt: string; count: number | null; valid: boolean}[]} | null = $state(null);
   let fileInfoError = $state(false);
   let inputDialog: HTMLDialogElement;
   const activeLanguage = $derived.by(() => modal === "settings" ? prefs.language : snap?.database.settings.language ?? "system");
@@ -122,7 +128,7 @@
   const assetCategories = $derived([...categories, ...Array.from(new Set(entries.map((s) => s.category)))
     .filter((id) => !categories.some((c) => c.id === id)).map((id) => ({ id, zh: id, en: id, icon: "" }))]);
   const filtered = $derived.by(() => {
-    const rows = new Map(snap?.summary.rows.map((r) => [r.id, r.actual]));
+    const rows = new Map(snap?.summary.rows.map((r) => [r.id, r[costBasis]]));
     return entries.filter(
       (s) =>
         (category === "all" || s.category === category) &&
@@ -284,6 +290,7 @@
             missingRates: [],
             rows: [],
             activeCount: 0,
+            categories: [], kinds: [],
           },
         };
         return;
@@ -612,23 +619,21 @@
         filters: [{ name: "JSON", extensions: ["json"] }],
       });
       if (path) {
+        restoringBackup = false;
         preview = await call<Database>("preview_file", { path });
       }
     });
   }
   async function replaceData() {
     await action(async () => {
-      await call("replace_data", {
+      await call(restoringBackup ? "restore_data" : "replace_data", {
         database: $state.snapshot(preview),
         revision: settingsRevision,
       });
       preview = null;
       modal = "";
       await reload(true);
-      notice = tr(
-        "已导入，原数据已备份",
-        "Imported. Previous data was backed up.",
-      );
+      notice = restoringBackup ? tr("已恢复，恢复前的数据已备份", "Restored. Previous data was backed up.") : tr("已导入，原数据已备份", "Imported. Previous data was backed up.");
     });
   }
   async function moveData() {
@@ -743,12 +748,14 @@
         await call("panel_ready", { dark });
       }
       if (new URLSearchParams(location.search).has("settings")) await settings();
+      if (new URLSearchParams(location.search).has("statistics")) showStatistics = true;
       if (new URLSearchParams(location.search).has("about")) { await settings(); settingsTab = "about"; }
       if (isTauri()) {
         if (new URLSearchParams(location.search).has("add")) await picker();
-        for (const name of ["network-changed", "data-changed", "open-settings", "open-add", "open-about"]) {
+        for (const name of ["network-changed", "data-changed", "open-settings", "open-add", "open-about", "open-statistics"]) {
           const unlisten = await listen(name, () => {
             if (name === "network-changed") void call<boolean>("offline_mode").then((value) => offline = value);
+            else if (name === "open-statistics") showStatistics = true;
             else if (name === "open-about") void settings().then(() => settingsTab = "about");
             else if (name === "open-settings") void settings();
             else if (name === "open-add") void picker();
@@ -789,6 +796,7 @@
       <div class="page-title"><h1>Subbit</h1>{#if snap?.database.settings.showLevel}<span class="level" title={spendingLevelName}>{spendingLevelName}</span>{/if}</div>
       <div class="header-actions">
         {#if !panel}<button class="icon-button" aria-label={tr("设置", "Settings")} title={tr("设置", "Settings")} onclick={settings}><Icon name="settings"/></button>{/if}
+        <button class="icon-button" aria-label={tr("统计", "Statistics")} title={tr("统计", "Statistics")} disabled={!snap} onclick={() => { if (panel) void call("open_main", {action: "statistics"}); else showStatistics = true; }}><Icon name="chart"/></button>
         <button class="primary" onclick={picker}><Icon name="plus"/>{labels.addAsset}</button>
       </div>
     </header>
@@ -825,7 +833,7 @@
           <select aria-label={tr("支付方式", "Payment method")} bind:value={paymentFilter}><option value="all">{tr("全部支付方式", "All payments")}</option><option value="">{tr("未设置", "Not set")}</option>{#each paymentMethods as method}<option value={method[0]}>{method[en ? 2 : 1]}</option>{/each}</select>
           <select aria-label={tr("排序依据", "Sort by")} bind:value={sortBy}><option value="added">{tr("添加时间", "Date added")}</option><option value="price">{tr("价格", "Price")}</option></select>
           <select aria-label={tr("排序方向", "Sort order")} bind:value={sortOrder}><option value="desc">{tr("降序", "Descending")}</option><option value="asc">{tr("升序", "Ascending")}</option></select>
-        </div><span>{labels.personalCost} / {unitLabel(period)}</span>
+        </div><label class="cost-basis"><select aria-label={tr("费用口径", "Cost basis")} bind:value={costBasis}><option value="bill">{labels.billedCost}</option><option value="actual">{labels.personalCost}</option></select><span>/ {unitLabel(period)}</span></label>
       </div>
       {#if loading}<div class="empty-state">
           {tr("正在读取本地数据…", "Loading your local data…")}
@@ -892,7 +900,7 @@
                 ></span
               >
               <span class="asset-cost"
-                ><strong>{money(cost?.actual)}</strong>{#if reimbursementStatus(item) === "full"}<small>{tr("全额报销", "Fully reimbursed")}</small>{:else if reimbursementStatus(item) === "partial"}<small>{tr("部分报销", "Partly reimbursed")}</small>{/if}</span
+                ><span class="cost-values">{#if reimbursementStatus(item) !== "none" && cost?.bill != null && cost?.actual != null && cost.bill !== cost.actual}<del title={labels.billedCost}>{money(cost.bill)}</del>{/if}<strong>{money(cost?.actual)}</strong></span>{#if reimbursementStatus(item) === "full"}<small>{tr("全额报销", "Fully reimbursed")}</small>{:else if reimbursementStatus(item) === "partial"}<small>{tr("部分报销", "Partly reimbursed")}</small>{/if}</span
               ><span class="chevron"><Icon name="chevron" size={16}/></span>
             </button>{/each}
         </div>{/if}
@@ -1439,8 +1447,8 @@
         </div>
       {:else if settingsTab === "data"}<p class="hint">
           {tr(
-            "所有资产、设置、自定义图标与汇率都保存在一个 JSON 文件中。每次修改保留上一份 .bak 备份。",
-            "Assets, settings, custom icons and exchange rates live in one JSON file. Every write keeps the previous .bak backup.",
+            "所有资产、设置、自定义图标与汇率都保存在一个 JSON 文件中。最多保留 3 份备份：最近 2 份普通备份和 1 份导入前备份。",
+            "Assets, settings, icons and rates live in one JSON file. Keep up to 3 backups: 2 recent versions and 1 pre-import checkpoint.",
           )}
         </p>
         <div class="data-path">
@@ -1465,11 +1473,18 @@
             ><Icon name="download" size={16}/>{tr("导入 JSON", "Import JSON")}</button
           >
         </div>
+        {#if fileInfo?.backups.length}<div class="backup-list">
+          {#each fileInfo.backups as backup}<div class="backup-row">
+            <span><strong>{backup.kind === "import" ? tr("导入前备份", "Before import") : backup.kind === "latest" ? tr("最近备份", "Latest backup") : tr("上一份备份", "Previous backup")}</strong><small>{localTimestamp(backup.modifiedAt)} · {backup.count ?? "—"} {tr("项资产", "assets")} · {bytesLabel(backup.size)}</small></span>
+            <button disabled={busy || !backup.valid} onclick={() => action(async () => { const data = await call<Database>("preview_file", { path: backup.path }); restoringBackup = true; backupDate = localTimestamp(backup.modifiedAt); preview = data; })}>{tr("预览恢复", "Preview restore")}</button>
+          </div>{/each}
+        </div>{/if}
         {#if preview}<div class="import-preview">
+            {#if restoringBackup}<p>{tr("恢复备份", "Restore backup")} · {backupDate}</p>{/if}
             <strong
               >{tr(
-                `导入 ${preview.subscriptions.length} 项资产`,
-                `Import ${preview.subscriptions.length} assets`,
+                `${restoringBackup ? "恢复" : "导入"} ${preview.subscriptions.length} 项资产`,
+                `${restoringBackup ? "Restore" : "Import"} ${preview.subscriptions.length} assets`,
               )}</strong
             >
             <p>
@@ -1479,7 +1494,7 @@
               )}
             </p>
             <button class="primary" disabled={busy} onclick={replaceData}
-              >{tr("确认替换", "Replace data")}</button
+              >{restoringBackup ? tr("确认恢复", "Restore backup") : tr("确认替换", "Replace data")}</button
             ><button onclick={() => (preview = null)}
               >{tr("取消", "Cancel")}</button
             >
@@ -1573,3 +1588,5 @@
     {:else}<button class="primary" disabled={offline || updateState !== "available"} onclick={installUpdate}>{updateState === "downloading" ? tr("正在下载并安装…", "Downloading and installing…") : tr("下载并安装", "Download and install")}</button>{/if}
   </div>
 </dialog>
+
+{#if showStatistics && snap}<Statistics snapshot={snap} {categories} {en} initialBasis={costBasis} {currencies} onclose={() => showStatistics = false} onchange={async (nextCurrency, nextPeriod) => { currency = nextCurrency; period = nextPeriod; await reload(); }}/>{/if}

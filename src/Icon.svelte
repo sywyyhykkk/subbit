@@ -1,6 +1,7 @@
 <script lang="ts">
-  let { name, size = 18 }: { name: 'plus' | 'settings' | 'search' | 'chevron' | 'close' | 'arrow' | 'back' | 'refresh' | 'download' | 'upload' | 'infinity' | 'calendar' | 'globe'; size?: number } = $props();
+  let { name, size = 18 }: { name: 'plus' | 'settings' | 'search' | 'chevron' | 'close' | 'arrow' | 'back' | 'refresh' | 'download' | 'upload' | 'infinity' | 'calendar' | 'globe' | 'chart'; size?: number } = $props();
   const paths = {
+    chart: "M4 3v18h17M8 16v-5m5 5V6m5 10V9",
     globe: 'M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0M3 12h18M12 3c-5 5-5 13 0 18 5-5 5-13 0-18',
     calendar: 'M5 4h14v17H5zM8 2v4m8-4v4M5 9h14M8 13h2m4 0h2m-8 4h2m4 0h2',
     plus: 'M12 5v14M5 12h14',

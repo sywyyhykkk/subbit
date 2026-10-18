@@ -6,17 +6,17 @@
 
 ## 下载与安装
 
-下载 [Subbit 0.0.4 正式版](https://github.com/sywyyhykkk/subbit/releases/tag/v0.0.4)：
+下载 [Subbit 0.0.5 正式版](https://github.com/sywyyhykkk/subbit/releases/tag/v0.0.5)：
 
-- [macOS Apple Silicon DMG](https://github.com/sywyyhykkk/subbit/releases/download/v0.0.4/Subbit_0.0.4_macos-arm64.dmg)：macOS 12+，Apple M 系列芯片。
-- [macOS Intel DMG](https://github.com/sywyyhykkk/subbit/releases/download/v0.0.4/Subbit_0.0.4_macos-x86_64.dmg)：macOS 12+，Intel 处理器。
-- [Windows x64 安装 EXE](https://github.com/sywyyhykkk/subbit/releases/download/v0.0.4/Subbit_0.0.4_windows-x64-setup.exe)：支持 Windows 10/11、Intel/AMD 64 位。运行安装程序，再从开始菜单启动。
+- [macOS Apple Silicon DMG](https://github.com/sywyyhykkk/subbit/releases/download/v0.0.5/Subbit_0.0.5_macos-arm64.dmg)：macOS 12+，Apple M 系列芯片。
+- [macOS Intel DMG](https://github.com/sywyyhykkk/subbit/releases/download/v0.0.5/Subbit_0.0.5_macos-x86_64.dmg)：macOS 12+，Intel 处理器。
+- [Windows x64 安装 EXE](https://github.com/sywyyhykkk/subbit/releases/download/v0.0.5/Subbit_0.0.5_windows-x64-setup.exe)：支持 Windows 10/11、Intel/AMD 64 位。运行安装程序，再从开始菜单启动。
 
 Mac 可在苹果菜单 → 关于本机中查看芯片类型，选择对应的 DMG，打开后将 Subbit 拖入 Applications。
 
-无需开发环境。Windows 缺少 WebView2 时会联网安装；请下载安装包，而不是 GitHub 自动生成的 Source code 源码压缩包。此版本尚无发布者签名及 Apple 公证，首次启动可能出现 Gatekeeper 或 SmartScreen 提示。安装条件和验证范围见 [发布说明](docs/releases/0.0.4.md)。
+无需开发环境。Windows 缺少 WebView2 时会联网安装；请下载安装包，而不是 GitHub 自动生成的 Source code 源码压缩包。此版本尚无发布者签名及 Apple 公证，首次启动可能出现 Gatekeeper 或 SmartScreen 提示。安装条件和验证范围见 [发布说明](docs/releases/0.0.5.md)。
 
-0.0.2 / 0.0.3 可在 **设置 → 关于 → 检查更新** 中升级至 0.0.4；从 0.0.1 升级需手动安装一次。
+0.0.2–0.0.4 可在 **设置 → 关于 → 检查更新** 中升级至 0.0.5；从 0.0.1 升级需手动安装一次。
 
 
 ## 功能
@@ -32,6 +32,12 @@ Mac 可在苹果菜单 → 关于本机中查看芯片类型，选择对应的 D
 - 全额 / 固定金额 / 百分比报销，中英文、深浅色、等级和登录时启动。
 - 数据放在系统文档目录的 `Subbit/subscriptions.json`，支持改位置、完整导入导出，每次修改保留 `.bak`。
 - 本地 stdio MCP，可供 Agent 查询目录、预览导入、批量导入和汇总成本。
+
+## 花销报告与备份（0.0.5）
+
+设置右侧的统计按钮可查看分类花销、主要资产及订阅 / 买断构成，并导出简洁 PNG 报告。统计涵盖全部有效资产，展示当前折算费用，不代表历史付款流水。列表可按账单花销或实际花销排序，并记住选择。
+
+资产备份最多保留 3 份：最近 2 份普通备份和 1 份导入前备份。在「设置 → 数据」预览时间与资产数量后恢复。普通保存和恢复不覆盖导入前恢复点，下一次有效导入才替换它。相同导入请求重试不改数据、版本号或备份。
 
 ## 域名与离线模式（0.0.4）
 

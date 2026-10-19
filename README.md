@@ -8,17 +8,17 @@ Rust + Tauri 2 + Svelte 5. macOS and Windows. No account, server, or bundled bro
 
 ## Download and install
 
-Get [Subbit 0.0.5](https://github.com/sywyyhykkk/subbit/releases/tag/v0.0.5):
+Get [Subbit 0.0.6](https://github.com/sywyyhykkk/subbit/releases/tag/v0.0.6):
 
-- [macOS Apple Silicon DMG](https://github.com/sywyyhykkk/subbit/releases/download/v0.0.5/Subbit_0.0.5_macos-arm64.dmg): macOS 12+, Apple M-series chips.
-- [macOS Intel DMG](https://github.com/sywyyhykkk/subbit/releases/download/v0.0.5/Subbit_0.0.5_macos-x86_64.dmg): macOS 12+, Intel processors.
-- [Windows x64 setup EXE](https://github.com/sywyyhykkk/subbit/releases/download/v0.0.5/Subbit_0.0.5_windows-x64-setup.exe): Windows 10/11 on Intel/AMD. Run the installer, then launch from the Start menu.
+- [macOS Apple Silicon DMG](https://github.com/sywyyhykkk/subbit/releases/download/v0.0.6/Subbit_0.0.6_macos-arm64.dmg): macOS 12+, Apple M-series chips.
+- [macOS Intel DMG](https://github.com/sywyyhykkk/subbit/releases/download/v0.0.6/Subbit_0.0.6_macos-x86_64.dmg): macOS 12+, Intel processors.
+- [Windows x64 setup EXE](https://github.com/sywyyhykkk/subbit/releases/download/v0.0.6/Subbit_0.0.6_windows-x64-setup.exe): Windows 10/11 on Intel/AMD. Run the installer, then launch from the Start menu.
 
 On macOS, check Apple menu → About This Mac to identify your chip, choose the matching DMG, then drag Subbit into Applications.
 
-No development tools are required. Windows installs WebView2 over the internet if it is missing. Choose an installer rather than GitHub's “Source code” archives. This release is not publisher-signed or Apple-notarized, so Gatekeeper or SmartScreen may require confirmation at first launch. See the [release notes](docs/releases/0.0.5.md) for installation conditions and validation details.
+No development tools are required. Windows installs WebView2 over the internet if it is missing. Choose an installer rather than GitHub's “Source code” archives. This release is not publisher-signed or Apple-notarized, so Gatekeeper or SmartScreen may require confirmation at first launch. See the [release notes](docs/releases/0.0.6.md) for installation conditions and validation details.
 
-From 0.0.2–0.0.4, install 0.0.5 using **Settings → About → Check for updates**. When upgrading from 0.0.1, install 0.0.5 manually once.
+From 0.0.2–0.0.5, install 0.0.6 using **Settings → About → Check for updates**. When upgrading from 0.0.1, install 0.0.6 manually once.
 
 
 ## What it does

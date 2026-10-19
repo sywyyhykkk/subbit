@@ -150,7 +150,9 @@ fn locate_data(path: PathBuf) -> Result<()> {
     Store::system()?.locate(path)
 }
 #[tauri::command]
-fn open_main(app: tauri::AppHandle, action: Option<String>) -> Result<()> {
+async fn open_main(app: tauri::AppHandle, action: Option<String>) -> Result<()> {
+    // WebView2 creation deadlocks inside synchronous IPC commands on Windows.
+    // Keep this command async so window creation runs outside the IPC handler.
     show_main(&app, action.as_deref().unwrap_or("")).map_err(|e| e.to_string())
 }
 #[tauri::command]
